@@ -1,0 +1,23 @@
+#pragma once
+
+#include "PythonAPILibraries/PythonYamlLibrary.h"
+#include "DeadlineCloudStep.generated.h"
+
+
+
+UCLASS(BlueprintType, Blueprintable)
+class UNREALDEADLINECLOUDSERVICE_API UDeadlineCloudStep : public UObject
+{
+	GENERATED_BODY()
+public:
+
+	UDeadlineCloudStep();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parameters")
+	FFilePath PathToTemplate;
+
+	/** Read path */
+	UFUNCTION()
+	TArray <FStepParameterDefinition> OpenStepFile(const FString& Path);
+
+};

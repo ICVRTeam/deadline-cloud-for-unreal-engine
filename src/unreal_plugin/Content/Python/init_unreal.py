@@ -4,6 +4,13 @@ import os
 import sys
 import unreal
 
+try:
+    import unreal_yaml_api
+    from unreal_yaml_api import PythonYamlLibraryImplementation
+    unreal.log("Yaml library imported.")
+except:
+    unreal.log_error("Unable to import yaml.")
+
 remote_execution = os.getenv("REMOTE_EXECUTION", "False")
 if remote_execution != "True":
     unreal.log("INIT DEADLINE CLOUD")
@@ -22,3 +29,7 @@ if remote_execution != "True":
     from settings import DeadlineCloudDeveloperSettingsImplementation  # noqa: F401
     from job_library import DeadlineCloudJobBundleLibraryImplementation  # noqa: F401
     import remote_executor  # noqa: F401
+
+
+
+
