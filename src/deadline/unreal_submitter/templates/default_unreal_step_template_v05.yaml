@@ -9,6 +9,9 @@ steps:
     - name: QueueManifestPath
       type: PATH
       range: []
+    - name: ChunkId
+      type: INT
+      range: []
 
   script:
     embeddedFiles:
@@ -18,11 +21,14 @@ steps:
       data: |
         handler: {{Task.Param.Handler}}
         queue_manifest_path: {{Task.Param.QueueManifestPath}}
+        chunk_size: {{Param.ChunkSize}}
+        chunk_id: {{Task.Param.ChunkId}}
     - name: initData
       filename: init-data.yaml
       type: TEXT
       data: |
         project_path: {{Param.ProjectFilePath}}
+        extra_cmd_args: {{Param.ExtraCmdArgs}}
     actions:
       onRun:
         command: UnrealAdaptor

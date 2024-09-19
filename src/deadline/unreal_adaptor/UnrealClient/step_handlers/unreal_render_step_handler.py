@@ -187,6 +187,34 @@ class UnrealRenderStepHandler(BaseStepHandler):
         name = job_name or Path(level_sequence_path).stem
         render_job.job_name = name
 
+    @staticmethod
+    def create_queue_from_queue_asset(movie_pipeline_queue_subsystem, movie_pipeline_queue_asset_path: str):
+        pipeline_queue = movie_pipeline_queue_subsystem.get_queue()
+        pipeline_queue.delete_all_jobs()
+
+        movie_pipeline_queue_asset = unreal.EditorAssetLibrary.load_asset(movie_pipeline_queue_asset_path)
+        pipeline_queue.copy_from(movie_pipeline_queue_asset)
+
+    @staticmethod
+    def enable_shots_by_chunk(
+            render_job: unreal.UnrealMoviePipelineExecutorJob,
+            task_chunk_size: int,
+            task_chunk_id: int
+    ):
+        shot_info = render_job.shot_info
+        chunks = [shot_info[i:i + task_chunk_size] for i in range(0, len(shot_info), task_chunk_size)]
+
+        if task_chunk_id < len(chunks):
+            shots_to_enable = chunks[task_chunk_id]
+        else:
+            shots_to_enable = []
+
+        for shot in shot_info:
+            if shot in shots_to_enable:
+                shot.enabled = True
+            else:
+                shot.enabled = False
+
     def run_script(self, args: dict) -> bool:
         """
         Create the unreal.MoviePipelineQueue object and render it with the render executor
@@ -214,6 +242,14 @@ class UnrealRenderStepHandler(BaseStepHandler):
                 level_path=args.get("level_path", ""),
                 job_configuration_path=args.get("job_configuration_path", ""),
             )
+
+        if args.get('chunk_size') and args.get('chunk_id'):
+            for job in subsystem.get_queue().get_jobs():
+                UnrealRenderStepHandler.enable_shots_by_chunk(
+                    render_job=job,
+                    task_chunk_size=args['chunk_size'],
+                    task_chunk_id=args['chunk_id']
+                )
 
         # Initialize Render executor
         executor = RemoteRenderMoviePipelineEditorExecutor()

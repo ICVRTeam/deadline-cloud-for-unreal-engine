@@ -280,6 +280,7 @@ class UnrealAdaptor(Adaptor[AdaptorConfiguration]):
 
         unreal_exe = "UnrealEditor-Cmd"
         unreal_project_path = self.init_data.get("project_path", "")
+        extra_cmd_args = self.init_data.get("extra_cmd_args", "").split(" ")
         client_path = self.unreal_client_path.replace("\\", "/")
         log_args = [
             "-log",
@@ -293,6 +294,9 @@ class UnrealAdaptor(Adaptor[AdaptorConfiguration]):
 
         args = [unreal_exe, unreal_project_path]
         args.extend(log_args)
+        args.extend(extra_cmd_args)
+        args = [arg for arg in args if arg]  # Remove empty strings
+        args = list(set(args))  # Remove duplicates
         args.append(f"-execcmds=r.HLOD 0,py {client_path}")
 
         regexhandler = RegexHandler(self._get_regex_callbacks())
