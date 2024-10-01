@@ -23,7 +23,17 @@ public class UnrealDeadlineCloudService : ModuleRules
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-			}
+                    "Slate",
+					"SlateCore",
+					"EditorWidgets",
+                                    "Core",
+                "CoreUObject",
+                "Engine",
+                "Slate",
+
+                "InputCore",
+                    "DesktopWidgets",
+            }
 			);
 			
 		
@@ -38,7 +48,10 @@ public class UnrealDeadlineCloudService : ModuleRules
 				"InputCore",
 				"EditorFramework",
 				"EditorStyle",
-				"UnrealEd",
+                "EditorWidgets",
+                "DesktopWidgets",
+                 "DesktopPlatform",
+                "UnrealEd",
 				"LevelEditor",
 				"InteractiveToolsFramework",
 				"EditorInteractiveToolsFramework",
