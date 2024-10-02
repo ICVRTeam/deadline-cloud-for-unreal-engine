@@ -8,7 +8,7 @@ from deadline.client.api import (
 )
 from deadline.job_attachments.exceptions import AssetSyncCancelledError
 
-from deadline.unreal_submitter.unreal_open_job.open_job_description import OpenJobDescription
+from deadline.unreal_submitter.unreal_open_job import UnrealOpenJob
 
 from ._version import version
 
@@ -34,7 +34,7 @@ class UnrealSubmitter:
     def __init__(self, silent_mode: bool = False):
         self._silent_mode = silent_mode
 
-        self._jobs: list[OpenJobDescription] = []
+        self._jobs: list[UnrealOpenJob] = []
         self.submit_status: UnrealSubmitStatus = UnrealSubmitStatus.COMPLETED
         self.submit_message: str = "Start submitting..."
         self.progress_list: list[float] = []
@@ -62,7 +62,7 @@ class UnrealSubmitter:
         :param mrq_job: unreal.MoviePipelineExecutorJob instance
         :type mrq_job: unreal.MoviePipelineExecutorJob
         """
-        self._jobs.append(OpenJobDescription(mrq_job=mrq_job))
+        self._jobs.append(UnrealOpenJob(mrq_job=mrq_job))
 
     def _display_progress(self, check_submit_status, message):
         """
