@@ -1,10 +1,25 @@
 import unreal
 import yaml
 
-
-
 @unreal.uclass()
 class PythonYamlLibraryImplementation(unreal.PythonYamlLibrary):
+
+    @unreal.ufunction(override=True)
+    def read_name(self, path: str):
+        file = open(path, 'r')
+        result = yaml.safe_load(file)
+
+        f_string = "default"
+
+        name_ = (result['name'])
+        f_string = name_
+        print(f"Read the {name_}")
+        return f_string
+
+
+
+#@unreal.uclass()
+#class PythonYamlLibraryImplementation(unreal.PythonYamlLibrary):
 
     @unreal.ufunction(override=True)
     def open_job_file(self, path: str):
