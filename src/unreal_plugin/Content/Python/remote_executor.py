@@ -1,6 +1,6 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 import unreal
-from deadline.unreal_submitter.submitter import UnrealSubmitter
+from deadline.unreal_submitter.submitter import UnrealRenderOpenJobSubmitter
 
 
 @unreal.uclass()
@@ -33,7 +33,7 @@ class MoviePipelineDeadlineCloudRemoteExecutor(unreal.MoviePipelineExecutorBase)
 
         # TODO Custom commandline arguments
 
-        unreal_submitter = UnrealSubmitter()
+        unreal_submitter = UnrealRenderOpenJobSubmitter()
 
         for job in self.pipeline_queue.get_jobs():
             unreal.log(f"Submitting Job `{job.job_name}` to Deadline Cloud...")
