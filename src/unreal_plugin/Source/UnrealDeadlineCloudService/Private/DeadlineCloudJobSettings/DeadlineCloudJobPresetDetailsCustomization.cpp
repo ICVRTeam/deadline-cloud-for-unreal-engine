@@ -259,6 +259,7 @@ bool FDeadlineCloudJobPresetDetailsCustomization::IsPropertyHiddenInMovieRenderQ
 	return false;
 }
 
+//bool GetPresetValueAsString(const FProperty* PropertyPtr, UMoviePipelineDeadlineCloudExecutorJob* Job, FString& OutFormattedValue)
 bool GetPresetValueAsString(const FProperty* PropertyPtr, UMoviePipelineDeadlineCloudExecutorJob* Job, FString& OutFormattedValue)
 {
 	if (!PropertyPtr || !Job)
@@ -266,7 +267,8 @@ bool GetPresetValueAsString(const FProperty* PropertyPtr, UMoviePipelineDeadline
 		return false;
 	}
 
-	UDeadlineCloudJobPreset* SelectedJobPreset = Job->JobPreset;
+	//UDeadlineCloudJobPreset* SelectedJobPreset = Job->JobPreset;
+	UDeadlineCloudJob* SelectedJobPreset = Job->JobPreset;
 	if (!SelectedJobPreset)
 	{
 		return false;

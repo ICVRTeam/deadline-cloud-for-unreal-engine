@@ -3,6 +3,7 @@
 #pragma once
 
 #include "DeadlineCloudJobSettings/DeadlineCloudJobDataAsset.h"
+#include "DeadlineCloudJobSettings/DeadlineCloudJob.h"
 #include "IDetailCustomization.h"
 #include "MoviePipelineQueue.h"
 
@@ -70,7 +71,8 @@ public:
 	 * Reference to Deadline Cloud job preset DataAsset. Source for default job settings
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DeadlineCloud")
-	TObjectPtr<UDeadlineCloudJobPreset> JobPreset;
+	//TObjectPtr<UDeadlineCloudJobPreset> JobPreset;
+	TObjectPtr<UDeadlineCloudJob> JobPreset;
 
 	/**
 	 * Reference to Deadline Cloud job preset DataAsset. Contains overriden job settings
