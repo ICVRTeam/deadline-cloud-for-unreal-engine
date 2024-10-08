@@ -27,7 +27,7 @@ class PythonYamlLibraryImplementation(unreal.PythonYamlLibrary):
         return u_parameter_definition
 
     @staticmethod
-    def step_parameter_to_u_step_task_parameter_definition(
+    def step_parameter_to_u_step_task_parameter(
             step_parameter: dict[str]
     ) -> unreal.StepTaskParameterDefinition:
         u_step_task_parameter_definition = unreal.StepTaskParameterDefinition()
@@ -75,13 +75,14 @@ class PythonYamlLibraryImplementation(unreal.PythonYamlLibrary):
         u_step_task_parameter_definitions = []
 
         for task_parameter_definition in step_template['parameterSpace']['taskParameterDefinitions']:
-            u_step_task_parameter_definition = PythonYamlLibraryImplementation.step_parameter_to_u_step_task_parameter_definition(
+            u_step_task_parameter_definition = PythonYamlLibraryImplementation.step_parameter_to_u_step_task_parameter(
                 task_parameter_definition
             )
             u_step_task_parameter_definitions.append(u_step_task_parameter_definition.copy())
 
         u_step_parameter_space.step_task_parameter_definition = u_step_task_parameter_definitions
 
+        # TODO return single object
         return [u_step_parameter_space]
 
     @unreal.ufunction(override=True)
@@ -235,11 +236,12 @@ class ParametersConsistencyChecker:
 
             for parameter_definition in step_template['parameterSpace']['taskParameterDefinitions']:
                 if parameter_definition['name'] in missed_in_data_asset:
-                    u_parameter_definition = PythonYamlLibraryImplementation.step_parameter_to_u_step_task_parameter_definition(
+                    u_parameter_definition = PythonYamlLibraryImplementation.step_parameter_to_u_step_task_parameter(
                         parameter_definition
                     )
                     fixed_step_task_parameter_definitions.append(u_parameter_definition.copy())
 
+            # TODO
             open_job_step.step_parameters[0].step_task_parameter_definition = fixed_step_task_parameter_definitions
 
     def check_environment_variables_consistency(
