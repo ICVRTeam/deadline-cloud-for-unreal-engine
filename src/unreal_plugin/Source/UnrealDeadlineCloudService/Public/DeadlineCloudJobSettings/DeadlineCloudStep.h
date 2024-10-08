@@ -1,6 +1,6 @@
 #pragma once
 
-#include "PythonAPILibraries/PythonYamlLibrary.h"
+
 #include "DeadlineCloudEnvironment.h"
 #include "DeadlineCloudStep.generated.h"
 
@@ -32,7 +32,11 @@ private:
 public:
 	/** Read path */
 	UFUNCTION()
-
 	void OpenStepFile(const FString& Path);
+
+	UFUNCTION()
+	void CheckStepParametersConsistency(UDeadlineCloudStep* Self);
+
+
 	TArray<FStepTaskParameterDefinition> GetStepParameters();
 };
