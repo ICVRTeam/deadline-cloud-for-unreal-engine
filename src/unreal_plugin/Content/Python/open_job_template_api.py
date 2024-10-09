@@ -69,10 +69,6 @@ class PythonYamlLibraryImplementation(unreal.PythonYamlLibrary):
         with open(path, 'r') as f:
             step_template = yaml.safe_load(f)
 
-      #  u_step_parameter_space = unreal.StepParameterSpace()
-      #  u_step_parameter_space.name = step_template['name']  # TODO i.alekseeva Only step has name, not the params space
-
-       # u_step_task_parameter_definitions = []
         u_step_task_parameter_definitions: list[unreal.StepTaskParameterDefinition] = []
 
         for task_parameter_definition in step_template['parameterSpace']['taskParameterDefinitions']:
@@ -81,10 +77,6 @@ class PythonYamlLibraryImplementation(unreal.PythonYamlLibrary):
             )
             u_step_task_parameter_definitions.append(u_step_task_parameter_definition.copy())
 
-       # u_step_parameter_space.step_task_parameter_definition = u_step_task_parameter_definitions
-
-        # TODO return single object
-        #return [u_step_parameter_space]
         return u_step_task_parameter_definitions
 
     @unreal.ufunction(override=True)
@@ -101,6 +93,7 @@ class PythonYamlLibraryImplementation(unreal.PythonYamlLibrary):
 
 
 # TODO i.alekseeva mocked consistency check structure, need to implement in C++
+# unreal.ParametersConsistencyCheckResult
 from dataclasses import dataclass
 
 
@@ -111,7 +104,7 @@ class ParametersConsistencyCheckResult:
     reason: str
 
 
-#class ParametersConsistencyChecker:
+
 @unreal.uclass()
 class ParametersConsistencyChecker(unreal.PythonParametersConsistencyChecker):
 
@@ -161,24 +154,34 @@ class ParametersConsistencyChecker(unreal.PythonParametersConsistencyChecker):
 
         return ParametersConsistencyCheckResult(passed, reason)
 
+    @unreal.ufunction(override=True)
     def check_job_parameters_consistency(
             self,
             open_job: unreal.DeadlineCloudJob
-    ) -> ParametersConsistencyCheckResult:
+    ) -> unreal.ParametersConsistencyCheckResult:
 
-        with open(open_job.path_to_template, 'r') as f:
+        with open(open_job.path_to_template.file_path, 'r') as f:
             job_template = yaml.safe_load(f)
 
         yaml_parameter_names = [p['name'] for p in job_template['parameterDefinitions']]
-        open_job_parameters = [p.name for p in open_job.job_parameters]
+        print(f"Read yaml {yaml_parameter_names}")
+        open_job_parameters = [p.name for p in open_job.get_job_parameters()]
+        print(f"Read job {open_job_parameters}")
 
-        return self.check_parameters_consistency(
+        # return self.check_parameters_consistency(
+        check_res = self.check_parameters_consistency(
             yaml_parameter_names=yaml_parameter_names,
             data_asset_parameter_names=open_job_parameters
         )
 
+        result = unreal.ParametersConsistencyCheckResult()
+        result.passed = check_res.passed
+        result.reason = check_res.reason
+        return result
+
+    @unreal.ufunction(override=True)
     def fix_job_parameters_consistency(self, open_job: unreal.DeadlineCloudJob):
-        with open(open_job.path_to_template, 'r') as f:
+        with open(open_job.path_to_template.file_path, 'r') as f:
             job_template = yaml.safe_load(f)
 
         yaml_parameter_names = [p['name'] for p in job_template['parameterDefinitions']]
@@ -204,23 +207,31 @@ class ParametersConsistencyChecker(unreal.PythonParametersConsistencyChecker):
 
             open_job.job_parameters = fixed_parameter_definitions
 
+    @unreal.ufunction(override=True)
     def check_step_parameters_consistency(
             self,
             open_job_step: unreal.DeadlineCloudStep
-    ) -> ParametersConsistencyCheckResult:
-        with open(open_job_step.path_to_template, 'r') as f:
+    ):# -> ParametersConsistencyCheckResult:
+        with open(open_job_step.path_to_template.file_path, 'r') as f:
             step_template = yaml.safe_load(f)
 
         yaml_parameter_names = [p['name'] for p in step_template['parameterSpace']['taskParameterDefinitions']]
         open_job_step_parameters = [p.name for p in open_job_step.step_parameters]
 
-        return self.check_parameters_consistency(
+        result = unreal.ParametersConsistencyCheckResult
+
+       # return self.check_parameters_consistency(
+        check_res = self.check_parameters_consistency(
             yaml_parameter_names=yaml_parameter_names,
             data_asset_parameter_names=open_job_step_parameters
         )
+       # result.passed = check_res.passed
+        result.reason = check_res.reason
+        return result
 
+    @unreal.ufunction(override=True)
     def fix_step_parameters_consistency(self, open_job_step: unreal.DeadlineCloudStep):
-        with open(open_job_step.path_to_template, 'r') as f:
+        with open(open_job_step.path_to_template.file_path, 'r') as f:
             step_template = yaml.safe_load(f)
 
         yaml_parameter_names = [p['name'] for p in step_template['parameterSpace']['taskParameterDefinitions']]
@@ -248,11 +259,12 @@ class ParametersConsistencyChecker(unreal.PythonParametersConsistencyChecker):
             # TODO
             open_job_step.step_parameters[0].step_task_parameter_definition = fixed_step_task_parameter_definitions
 
+    @unreal.ufunction(override=True)
     def check_environment_variables_consistency(
             self,
             open_job_environment: unreal.DeadlineCloudEnvironment
     ) -> ParametersConsistencyCheckResult:
-        with open(open_job_environment.path_to_template, 'r') as f:
+        with open(open_job_environment.path_to_template.file_path, 'r') as f:
             environment_template = yaml.safe_load(f)
 
         # TODO i.alekseeva variables should be a list of pairs, not just a string joined by "="
@@ -267,8 +279,9 @@ class ParametersConsistencyChecker(unreal.PythonParametersConsistencyChecker):
             data_asset_parameter_names=open_job_environment_variable_names
         )
 
+    @unreal.ufunction(override=True)
     def fix_environment_variables_consistency(self, open_job_environment: unreal.DeadlineCloudEnvironment):
-        with open(open_job_environment.path_to_template, 'r') as f:
+        with open(open_job_environment.path_to_template.file_path, 'r') as f:
             environment_template = yaml.safe_load(f)
 
         # TODO i.alekseeva variables should be a list of pairs, not just a string joined by "="
