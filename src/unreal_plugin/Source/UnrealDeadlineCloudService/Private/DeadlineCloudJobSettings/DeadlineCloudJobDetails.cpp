@@ -16,6 +16,7 @@
 #include "Templates/SharedPointer.h"
 #include "PropertyEditorModule.h"
 #include "IDetailsView.h"
+#include "PythonAPILibraries/PythonParametersConsistencyChecker.h"
 
 
 #define LOCTEXT_NAMESPACE "JobDetails"
@@ -182,8 +183,16 @@ void FDeadlineCloudJobDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuil
     TArray<TWeakObjectPtr<UObject>> ObjectsBeingCustomized;
     MyDetailLayout->GetObjectsBeingCustomized(ObjectsBeingCustomized);
     Settings = Cast<UDeadlineCloudJob>(ObjectsBeingCustomized[0].Get());
-
+    FParametersConsistencyCheckResult result;
     // TODO: consistency check
+    if (Settings.IsValid() && Settings->GetJobParameters().Num() > 0)
+    {
+        UDeadlineCloudJob* MyObject = Settings.Get();
+        result = MyObject->CheckJobParametersConsistency(MyObject);
+        FString log = result.Reason;
+        UE_LOG(LogTemp, Warning, TEXT("check consistency result: %s"), *log);
+    }
+    
 
     Settings->OpenJobFile(Settings->PathToTemplate.FilePath);
 
@@ -194,7 +203,7 @@ void FDeadlineCloudJobDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuil
 
         IDetailCategoryBuilder& PropertiesCategory = MyDetailLayout->EditCategory("DeadlineCloudJobParameters");
 
-        for (auto& parameter : Settings->JobParameters) {
+        for (auto& parameter : Settings->GetJobParameters()) {
 
             EValueType CurrentType = parameter.Type;
 

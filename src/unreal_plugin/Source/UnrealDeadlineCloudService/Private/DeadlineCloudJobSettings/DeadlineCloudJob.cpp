@@ -1,5 +1,7 @@
 #include "DeadlineCloudJobSettings/DeadlineCloudJob.h"
 #include "PythonAPILibraries/PythonYamlLibrary.h"
+#include "PythonAPILibraries/PythonParametersConsistencyChecker.h"
+
 
 UDeadlineCloudJob::UDeadlineCloudJob()
 {
@@ -19,4 +21,11 @@ void UDeadlineCloudJob::ReadName(const FString& Path)
 TArray<FParameterDefinition> UDeadlineCloudJob::GetJobParameters()
 {
 	return JobParameters;
+}
+
+
+FParametersConsistencyCheckResult UDeadlineCloudJob::CheckJobParametersConsistency(UDeadlineCloudJob* Self)
+{
+	FParametersConsistencyCheckResult result = UPythonParametersConsistencyChecker::Get()->CheckJobParametersConsistency(Self);
+	return result;
 }
