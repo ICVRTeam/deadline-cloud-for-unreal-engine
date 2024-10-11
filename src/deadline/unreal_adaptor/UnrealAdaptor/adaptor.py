@@ -280,6 +280,24 @@ class UnrealAdaptor(Adaptor[AdaptorConfiguration]):
 
         unreal_exe = "UnrealEditor-Cmd"
         unreal_project_path = self.init_data.get("project_path", "")
+        extra_cmd_str = self.init_data.get("extra_cmd_args", "")
+
+        # Everythiing between -execcmds=" and " is the value we want to keep
+        match = re.search(r'-execcmds=["\']([^"\']*)["\']', extra_cmd_str)
+        if match:
+            execcmds_value = match.group(1)
+        else:
+            execcmds_value = None
+
+        logger.info(f"execcmds: {execcmds_value}")
+
+        # Remove the -execcmds argument from the extra_cmd_args
+        extra_cmd_str = re.sub(
+            r'(-execcmds=["\'][^"\']*["\'])',
+            "",
+            extra_cmd_str
+        )
+
         client_path = self.unreal_client_path.replace("\\", "/")
         log_args = [
             "-log",
@@ -291,9 +309,23 @@ class UnrealAdaptor(Adaptor[AdaptorConfiguration]):
             "-allowstdoutlogverbosity",
         ]
 
+        extra_cmd_args = extra_cmd_str.split(" ")
+
         args = [unreal_exe, unreal_project_path]
         args.extend(log_args)
-        args.append(f"-execcmds=r.HLOD 0,py {client_path}")
+        args.extend(extra_cmd_args)
+        args = [arg for arg in args if arg]  # Remove empty strings
+        args = list(dict.fromkeys(args))     # Remove duplicates
+
+        # Add the execcmds argument back to the args
+        if execcmds_value is not None:
+            execcmds_value = f'-execcmds={execcmds_value},py {client_path}'
+        else:
+            execcmds_value = f'-execcmds=r.HLOD 0,py {client_path}'
+
+        args.append(execcmds_value)
+
+        logger.info(f"Starting Unreal Engine with args: {args}")
 
         regexhandler = RegexHandler(self._get_regex_callbacks())
         self._unreal_client = UnrealSubprocessWithLogs(

@@ -1,4 +1,6 @@
 import os
+import re
+
 import yaml
 import unreal
 from copy import deepcopy
@@ -118,7 +120,10 @@ class OpenJobDescription:
     Represents a OpenJob description object
     """
 
-    def __init__(self, mrq_job: unreal.MoviePipelineExecutorJob):
+    def __init__(
+            self,
+            mrq_job: unreal.MoviePipelineExecutorJob
+    ):
         """
         Build OpenJob with the given MovieP ipeline Executor Job and Queue Manifest path
 
@@ -156,7 +161,10 @@ class OpenJobDescription:
         """
         return self._job_bundle_path
 
-    def _create_open_job_from_mrq_job(self, mrq_job: unreal.MoviePipelineExecutorJob) -> None:
+    def _create_open_job_from_mrq_job(
+            self,
+            mrq_job: unreal.MoviePipelineExecutorJob
+    ) -> None:
         """
         Creates an OpenJob representation from the unreal.MoviePipelineExecutorJob.
 
@@ -164,6 +172,10 @@ class OpenJobDescription:
 
         :param mrq_job: unreal.MoviePipelineExecutorJob instance
         :type mrq_job: unreal.MoviePipelineExecutorJob
+
+        :param extra_cmd_args: Extra command line arguments
+
+        :param task_chunk_size: Task chunk size
         """
 
         self._open_job = deepcopy(self.default_job_template)
@@ -215,7 +227,9 @@ class OpenJobDescription:
 
         return level_sequence_dependencies + level_dependencies + [level_sequence_path, level_path]
 
-    def _build_parameter_values_dict(self, mrq_job: unreal.MoviePipelineExecutorJob) -> dict:
+    def _build_parameter_values_dict(
+            self, mrq_job: unreal.MoviePipelineExecutorJob
+    ) -> dict:
         """
         Build parameter values of the OpenJob with the given MRQ Job.
         Extend the built parameter values with OpenJob SharedSettings instance
@@ -239,6 +253,8 @@ class OpenJobDescription:
         # TODO handling unreal substitution templates
         output_path = output_path.replace("{project_dir}", project_directory)
 
+        cmd_args = self._get_ue_cmd_args(mrq_job)
+
         parameter_values = [
             {
                 "name": "LevelPath",
@@ -256,7 +272,14 @@ class OpenJobDescription:
                 "name": "ProjectDirectory",
                 "value": project_directory,
             },
-            {"name": "OutputPath", "value": output_path},
+            {
+                "name": "OutputPath",
+                "value": output_path
+            },
+            {
+                "name": "ExtraCmdArgs",
+                "value": " ".join(cmd_args)
+            }
         ]
 
         shared_parameter_values = JobSharedSettings(
@@ -268,7 +291,7 @@ class OpenJobDescription:
 
         return self._parameter_values_dict
 
-    def _build_asset_references(self, mrq_job) -> AssetReferences:
+    def _build_asset_references(self, mrq_job: unreal.MoviePipelineExecutorJob) -> AssetReferences:
         """
         Build asset references of the OpenJob with the given MRQ Job.
 
@@ -345,7 +368,10 @@ class OpenJobDescription:
 
         return self._asset_references
 
-    def _build_steps(self, mrq_job) -> list[JobStep]:
+    def _build_steps(
+            self,
+            mrq_job: unreal.MoviePipelineExecutorJob
+    ) -> list[JobStep]:
         """
         Build OpenJob steps with the given MRQ Job.
 
@@ -359,11 +385,23 @@ class OpenJobDescription:
         preset_overrides: unreal.DeadlineCloudJobPresetStruct = mrq_job.preset_overrides
         unreal.log(f"Preset overrides: {preset_overrides}")
 
+        shots_to_render = []
+        for shot_index, shot in enumerate(mrq_job.shot_info):
+            if not shot.enabled:
+                unreal.log(
+                    f"Skipped submitting shot {shot_index} in {mrq_job.job_name} "
+                    f"to server due to being already disabled!"
+                )
+            else:
+                shots_to_render.append(shot.outer_name)
+
         try:
             self._steps = JobStepFactory.create_steps(
                 job_settings=mrq_job.get_configuration().get_all_settings(),
                 host_requirements=preset_overrides.host_requirements,
                 queue_manifest_path=self._manifest_path,
+                shots_count=len(shots_to_render),
+                task_chunk_size=preset_overrides.job_shared_settings.task_chunk_size
             )
             return self._steps
 
@@ -413,3 +451,71 @@ class OpenJobDescription:
         ) = unreal.MoviePipelineEditorLibrary.save_queue_to_manifest_file(new_queue)
         manifest_path = unreal.Paths.convert_relative_path_to_full(manifest_path)
         self._manifest_path = manifest_path
+
+    def _get_ue_cmd_args(self, mrq_job: unreal.MoviePipelineExecutorJob) -> List[str]:
+        cmd_args = []
+
+        in_process_executor_settings = unreal.get_default_object(unreal.MoviePipelineInProcessExecutorSettings)
+
+        # Append all of inherited command line arguments from the editor
+        inherited_cmds: str = in_process_executor_settings.inherited_command_line_arguments
+
+        # Sanitize the commandline by removing any execcmds that may have passed through the commandline.
+        # We remove the execcmds because, in some cases, users may execute a script that is local to their editor build
+        # for some automated workflow but this is not ideal on the farm.
+        # We will expect all custom startup commands for rendering to go through the `Start Command` in the MRQ settings
+        inherited_cmds = re.sub(pattern=".*(?P<cmds>-execcmds=[\s\S]+[\'\"])", repl="", string=inherited_cmds)
+        cmd_args.extend(inherited_cmds.split(' '))
+
+        # Append all of additional command line arguments from the editor
+        additional_cmds: str = in_process_executor_settings.additional_command_line_arguments
+        cmd_args.extend(additional_cmds.split(' '))
+
+        # Initializes a single instance of every setting
+        # so that even non-user-configured settings have a chance to apply their default values
+        mrq_job.get_configuration().initialize_transient_settings()
+
+        job_url_params = []
+        job_cmd_args = []
+        job_device_profile_cvars = []
+        job_exec_cmds = []
+        for setting in mrq_job.get_configuration().get_all_settings():
+            (
+                job_url_params,
+                job_cmd_args,
+                job_device_profile_cvars,
+                job_exec_cmds
+            ) = setting.build_new_process_command_line_args(
+                out_unreal_url_params=job_url_params,
+                out_command_line_args=job_cmd_args,
+                out_device_profile_cvars=job_device_profile_cvars,
+                out_exec_cmds=job_exec_cmds,
+            )
+            # TODO is that necessary?
+            # Set the game override
+            # if setting.get_class() == unreal.MoviePipelineGameOverrideSetting.static_class():
+            #     game_override_class = setting.game_mode_override
+
+        # Apply job cmd arguments
+        cmd_args.extend(job_cmd_args)
+
+        if job_device_profile_cvars:
+            # -dpcvars="arg0,arg1,..."
+            cmd_args.append(
+                '-dpcvars="{}"'.format(",".join(job_device_profile_cvars))
+            )
+
+        if job_exec_cmds:
+            # -execcmds="cmd0,cmd1,..."
+            cmd_args.append(
+                '-execcmds="{}"'.format(",".join(job_exec_cmds))
+            )
+
+        extra_cmd_args = mrq_job.preset_overrides.job_shared_settings.extra_cmd_args
+        if extra_cmd_args:
+            cmd_args.extend(extra_cmd_args.split(' '))
+
+        # remove duplicates
+        cmd_args = list(set(cmd_args))
+
+        return cmd_args
