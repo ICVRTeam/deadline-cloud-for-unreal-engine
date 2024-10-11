@@ -65,6 +65,8 @@ public:
 	void SetJobParameters(TArray<FParameterDefinition> InJobParameters);
 
 
+	UFUNCTION(BlueprintCallable, Category = "Parameters")
+	void FixJobParametersConsistency(UDeadlineCloudJob* Job);
 
 public:
 
