@@ -246,14 +246,14 @@ void FDeadlineCloudJobDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuil
     FParametersConsistencyCheckResult result;
 
     /* Consistency check */
-    if (Settings.IsValid())
+    if (Settings.IsValid() && Settings->GetJobParameters().Num() > 0)
     {
         UDeadlineCloudJob* MyObject = Settings.Get();
         CheckConsidtensyPassed = CheckConsistency(MyObject);
     }
 
     /* If passed - Open job file*/
-    if (CheckConsidtensyPassed)
+    if (CheckConsidtensyPassed || Settings->GetJobParameters().Num() == 0)
     {
         Settings->OpenJobFile(Settings->PathToTemplate.FilePath);
     }
