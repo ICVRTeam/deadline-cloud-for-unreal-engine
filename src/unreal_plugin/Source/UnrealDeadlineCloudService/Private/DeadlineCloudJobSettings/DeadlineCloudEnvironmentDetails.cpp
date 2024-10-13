@@ -1,0 +1,213 @@
+#include "DeadlineCloudJobSettings/DeadlineCloudEnvironmentDetails.h"
+#include "DeadlineCloudJobSettings/DeadlineCloudEnvironment.h"
+#include "PropertyEditorModule.h"
+#include "Modules/ModuleManager.h"
+#include "DetailLayoutBuilder.h"
+#include "DetailWidgetRow.h"
+#include "DesktopPlatformModule.h"
+#include "UnrealDeadlineCloudServiceModule.h"
+#include "CoreMinimal.h"
+
+#include "Templates/SharedPointer.h"
+#include "IDetailsView.h"
+#include "IDetailChildrenBuilder.h"
+#include "IDetailPropertyRow.h"
+
+
+#include "EditorDirectories.h"
+#include "Widgets/Input/SFilePathPicker.h"
+#include "Widgets/Input/SEditableTextBox.h"
+
+#define LOCTEXT_NAMESPACE "EnvironmentDetails"
+
+
+/*Details*/
+TSharedRef<IDetailCustomization> FDeadlineCloudEnvironmentDetails::MakeInstance()
+{
+    return MakeShareable(new FDeadlineCloudEnvironmentDetails);
+}
+
+void FDeadlineCloudEnvironmentDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
+{
+    // The detail layout builder that is using us
+    MyDetailLayout = &DetailBuilder;
+
+    TArray<TWeakObjectPtr<UObject>> ObjectsBeingCustomized;
+    MyDetailLayout->GetObjectsBeingCustomized(ObjectsBeingCustomized);
+    Settings = Cast<UDeadlineCloudEnvironment>(ObjectsBeingCustomized[0].Get());
+
+    //  Dispatcher handle bind
+    if (Settings.IsValid() && (MyDetailLayout != nullptr))
+    {
+        Settings->OnSomethingChanged = FSimpleDelegate::CreateSP(this, &FDeadlineCloudEnvironmentDetails::ForceRefreshDetails);
+    };
+}
+void FDeadlineCloudEnvironmentDetails::ForceRefreshDetails()
+{
+   MyDetailLayout->ForceRefreshDetails();
+}
+
+TSharedRef<FDeadlineCloudEnvironmentParametersMapBuilder> FDeadlineCloudEnvironmentParametersMapBuilder::MakeInstance(TSharedRef<IPropertyHandle> InPropertyHandle)
+{
+	TSharedRef<FDeadlineCloudEnvironmentParametersMapBuilder> Builder =
+		MakeShared<FDeadlineCloudEnvironmentParametersMapBuilder>(InPropertyHandle);
+
+	return Builder;
+}
+
+FDeadlineCloudEnvironmentParametersMapBuilder::FDeadlineCloudEnvironmentParametersMapBuilder(TSharedRef<IPropertyHandle> InPropertyHandle)
+    : MapProperty(InPropertyHandle->AsMap()),
+	BaseProperty(InPropertyHandle)
+{
+	check(MapProperty.IsValid());
+}
+
+FName FDeadlineCloudEnvironmentParametersMapBuilder::GetName() const
+{
+	return BaseProperty->GetProperty()->GetFName();
+}
+
+void FDeadlineCloudEnvironmentParametersMapBuilder::GenerateChildContent(IDetailChildrenBuilder& InChildrenBuilder)
+{
+	uint32 NumChildren = 0;
+	BaseProperty->GetNumChildren(NumChildren);
+
+	EmptyCopyPasteAction = FUIAction(
+		FExecuteAction::CreateLambda([]() {}),
+		FCanExecuteAction::CreateLambda([]() { return false; })
+	);
+
+	for (uint32 ChildIndex = 0; ChildIndex < NumChildren; ++ChildIndex)
+	{
+		TSharedPtr<IPropertyHandle> ItemHandle = BaseProperty->GetChildHandle(ChildIndex);
+		if (!ItemHandle.IsValid())
+		{
+			continue;
+		}
+
+		IDetailPropertyRow& ItemRow = InChildrenBuilder.AddProperty(ItemHandle.ToSharedRef());
+		ItemRow.ShowPropertyButtons(false);
+		ItemRow.OverrideResetToDefault(FResetToDefaultOverride::Create(TAttribute<bool>(false)));
+
+		TSharedPtr<SWidget> NameWidget;
+		TSharedPtr<SWidget> ValueWidget;
+
+		ItemRow.GetDefaultWidgets( NameWidget, ValueWidget);
+
+		ItemRow.CustomWidget(true)
+			.CopyAction(EmptyCopyPasteAction)
+			.PasteAction(EmptyCopyPasteAction)
+			.NameContent()
+			[
+				NameWidget.ToSharedRef()
+			]
+			.ValueContent()
+			[
+				ValueWidget.ToSharedRef()
+			];
+	}
+}
+
+TSharedPtr<IPropertyHandle> FDeadlineCloudEnvironmentParametersMapBuilder::GetPropertyHandle() const
+{
+	return BaseProperty;
+}
+
+void FDeadlineCloudEnvironmentParametersMapBuilder::SetOnRebuildChildren(FSimpleDelegate InOnRebuildChildren)
+{
+	OnRebuildChildren = InOnRebuildChildren;
+}
+
+void FDeadlineCloudEnvironmentParametersMapCustomization::CustomizeHeader(TSharedRef<IPropertyHandle> InPropertyHandle, FDetailWidgetRow& InHeaderRow, IPropertyTypeCustomizationUtils& InCustomizationUtils)
+{
+    TSharedPtr<IPropertyHandle> ArrayHandle = InPropertyHandle->GetChildHandle("Variables", false);
+
+	EmptyCopyPasteAction = FUIAction(
+		FExecuteAction::CreateLambda([]() {}),
+		FCanExecuteAction::CreateLambda([]() { return false; })
+	);
+
+	auto OuterEnvironment = GetOuterEnvironment(InPropertyHandle);
+	if (IsValid(OuterEnvironment))
+	{
+        const FResetToDefaultOverride ResetDefaultOverride = FResetToDefaultOverride::Create(
+			FIsResetToDefaultVisible::CreateSPLambda(this, [this, OuterEnvironment](TSharedPtr<IPropertyHandle> PropertyHandle)->bool 
+                { 
+                    if (!PropertyHandle.IsValid())
+                    {
+                        return false;
+                    }
+
+					if (!IsValid(OuterEnvironment))
+					{
+                        return false;
+					}
+
+                    return !OuterEnvironment->IsDefaultVariables(); 
+                }),
+            FResetToDefaultHandler::CreateSPLambda(this, [this, OuterEnvironment](TSharedPtr<IPropertyHandle> PropertyHandle) 
+                {
+                    if (!PropertyHandle.IsValid())
+                    {
+                        return;
+                    }
+
+					if (!IsValid(OuterEnvironment))
+					{
+                        return;
+					}
+
+					OuterEnvironment->ResetVariables();
+                })
+        );
+		InHeaderRow.OverrideResetToDefault(ResetDefaultOverride);
+	}
+	else
+	{
+		// Hide the reset to default button since it provides little value
+		const FResetToDefaultOverride ResetDefaultOverride = FResetToDefaultOverride::Create(TAttribute<bool>(false));
+		InHeaderRow.OverrideResetToDefault(ResetDefaultOverride);
+	}
+
+	InHeaderRow.ValueContent()
+		.HAlign(HAlign_Left)
+		.VAlign(VAlign_Center)
+		.MinDesiredWidth(170.f)
+		.MaxDesiredWidth(170.f);
+
+	InHeaderRow.NameContent()
+	[
+		ArrayHandle->CreatePropertyNameWidget()
+	];
+
+	InHeaderRow.CopyAction(EmptyCopyPasteAction);
+	InHeaderRow.PasteAction(EmptyCopyPasteAction);
+
+	ArrayBuilder = FDeadlineCloudEnvironmentParametersMapBuilder::MakeInstance(ArrayHandle.ToSharedRef());
+}
+
+void FDeadlineCloudEnvironmentParametersMapCustomization::CustomizeChildren(TSharedRef<IPropertyHandle> InPropertyHandle, IDetailChildrenBuilder& InChildBuilder, IPropertyTypeCustomizationUtils& InCustomizationUtils)
+{
+	InChildBuilder.AddCustomBuilder(ArrayBuilder.ToSharedRef());
+}
+
+UDeadlineCloudEnvironment* FDeadlineCloudEnvironmentParametersMapCustomization::GetOuterEnvironment(TSharedRef<IPropertyHandle> Handle)
+{
+	TArray<UObject*> OuterObjects;
+	Handle->GetOuterObjects(OuterObjects);
+
+	if (OuterObjects.Num() == 0)
+	{
+		return nullptr;
+	}
+
+	const TWeakObjectPtr<UObject> OuterObject = OuterObjects[0];
+	if (!OuterObject.IsValid())
+	{
+		return nullptr;
+	}
+	UDeadlineCloudEnvironment* OuterJob = Cast<UDeadlineCloudEnvironment>(OuterObject);
+	return OuterJob;
+}
+
+#undef LOCTEXT_NAMESPACE
