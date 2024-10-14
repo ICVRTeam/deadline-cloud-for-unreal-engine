@@ -100,17 +100,17 @@ void FDeadlineCloudJobDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuil
     FParametersConsistencyCheckResult result;
 
     /* Consistency check */
-    if (Settings.IsValid())
+    if (Settings.IsValid() && Settings->GetJobParameters().Num() > 0)
     {
         UDeadlineCloudJob* MyObject = Settings.Get();
         CheckConsidtensyPassed = CheckConsistency(MyObject);
     }
-    
+
     /* If passed - Open job file*/
-    if (CheckConsidtensyPassed && Settings->GetJobParameters().IsEmpty())
+    if (CheckConsidtensyPassed || Settings->GetJobParameters().Num() == 0)
     {
         Settings->OpenJobFile(Settings->PathToTemplate.FilePath);
-    }    
+    }
 
     IDetailCategoryBuilder& PropertiesCategory = MyDetailLayout->EditCategory("Parameters");
       
@@ -267,8 +267,8 @@ void FDeadlineCloudJobParametersArrayBuilder::OnGenerateEntry(TSharedRef<IProper
 	if (IsValid(OuterJob))
 	{
         const FResetToDefaultOverride ResetDefaultOverride = FResetToDefaultOverride::Create(
-			FIsResetToDefaultVisible::CreateSPLambda(this, [this, OuterJob, ParameterName](TSharedPtr<IPropertyHandle> PropertyHandle)->bool 
-                { 
+			FIsResetToDefaultVisible::CreateSPLambda(this, [this, OuterJob, ParameterName](TSharedPtr<IPropertyHandle> PropertyHandle)->bool
+                {
                     if (!PropertyHandle.IsValid())
                     {
                         return false;
@@ -282,10 +282,10 @@ void FDeadlineCloudJobParametersArrayBuilder::OnGenerateEntry(TSharedRef<IProper
 					FString DefaultValue = OuterJob->GetDefaultParameterValue(ParameterName);
 					FString CurrentValue;
 					PropertyHandle->GetValue(CurrentValue);
-                           
-                    return !CurrentValue.Equals(DefaultValue); 
+
+                    return !CurrentValue.Equals(DefaultValue);
                 }),
-            FResetToDefaultHandler::CreateSPLambda(this, [this, ParameterName, OuterJob](TSharedPtr<IPropertyHandle> PropertyHandle) 
+            FResetToDefaultHandler::CreateSPLambda(this, [this, ParameterName, OuterJob](TSharedPtr<IPropertyHandle> PropertyHandle)
                 {
                     if (!PropertyHandle.IsValid())
                     {
@@ -298,7 +298,7 @@ void FDeadlineCloudJobParametersArrayBuilder::OnGenerateEntry(TSharedRef<IProper
 					}
 
 					FString DefaultValue = OuterJob->GetDefaultParameterValue(ParameterName);
-					PropertyHandle->SetValue(DefaultValue);     
+					PropertyHandle->SetValue(DefaultValue);
                 })
         );
 		PropertyRow.OverrideResetToDefault(ResetDefaultOverride);
@@ -332,7 +332,7 @@ void FDeadlineCloudJobParametersArrayBuilder::OnGenerateEntry(TSharedRef<IProper
                     .Text(FText::FromString(ParameterName))
 				    .Font(IDetailLayoutBuilder::GetDetailFont())
                     .ColorAndOpacity(FSlateColor::UseForeground())
-            ]	
+            ]
 	]
 	.ValueContent()
 	.HAlign(HAlign_Fill)
