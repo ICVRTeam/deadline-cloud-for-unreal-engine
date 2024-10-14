@@ -130,6 +130,13 @@ private:
 
     bool CheckConsidtensyPassed = true;
 public:
+	bool IsStepContainsErrors() const;
+	EVisibility GetStepErrorWidgetVisibility() const;
+	EVisibility GetStepDefaultWidgetVisibility() const;
+
+	bool IsEnvironmentContainsErrors() const;
+	EVisibility GetEnvironmentErrorWidgetVisibility() const;
+	EVisibility GetEnvironmentDefaultWidgetVisibility() const;
 
     EVisibility GetWidgetVisibility() const
     {
