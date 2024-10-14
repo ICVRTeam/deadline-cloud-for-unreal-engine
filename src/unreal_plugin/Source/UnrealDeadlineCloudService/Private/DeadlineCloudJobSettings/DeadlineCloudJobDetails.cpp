@@ -18,68 +18,12 @@
 #include "IDetailsView.h"
 #include "PythonAPILibraries/PythonParametersConsistencyChecker.h"
 #include "IDetailChildrenBuilder.h"
-//#include "Widgets/Dialogs/SMessageDialog.h"
 #include "Misc/MessageDialog.h"
 #include "DeadlineCloudJobSettings/DeadlineCloudDetailsWidgetsHelper.h"
 
 #define LOCTEXT_NAMESPACE "JobDetails"
 
 
-class  SConsistencyUpdateWidget : public SCompoundWidget
-{
-public:
-    SLATE_BEGIN_ARGS(SConsistencyUpdateWidget) {}
-        SLATE_ARGUMENT(FString, CheckResult)
-        SLATE_EVENT(FSimpleDelegate, OnFixButtonClicked)
-    SLATE_END_ARGS()
-    void Construct(const FArguments& InArgs) {
-
-        OnFixButtonClicked = InArgs._OnFixButtonClicked;
-
-        ChildSlot
-            [
-                SNew(SHorizontalBox)
-                    + SHorizontalBox::Slot()
-                    .AutoWidth()
-                    .Padding(5)
-                    [
-                        SNew(STextBlock)
-                            .Text(FText::FromString("Parameters changed. Update parameters?"))
-                            .ColorAndOpacity(FLinearColor::Yellow) // 
-                    ]
-
-                    //update?
-                    + SHorizontalBox::Slot()
-                    .AutoWidth()
-                    [
-                        SNew(SButton)
-                            .Text(FText::FromString("OK"))
-                            .OnClicked(this, &SConsistencyUpdateWidget::HandleButtonClicked)
-                    ]
-            ];
-    };
-
-
-private:
-    FSimpleDelegate OnFixButtonClicked;
-    FReply HandleButtonClicked()
-    {
-        if (OnFixButtonClicked.IsBound())
-        {
-            OnFixButtonClicked.Execute();  // 
-        }
-
-        return FReply::Handled();
-    }
-};
-
-TSharedRef<SWidget> CreateConsistencyUpdateWidget(FString ResultString)
-{
-    TSharedRef<SConsistencyUpdateWidget> ConsistensyWidget = SNew(SConsistencyUpdateWidget)
-        .CheckResult(ResultString)
-        .Visibility(EVisibility::Collapsed);
-    return  ConsistensyWidget;
-}
 
 /*Details*/
 TSharedRef<IDetailCustomization> FDeadlineCloudJobDetails::MakeInstance()
@@ -96,18 +40,18 @@ void FDeadlineCloudJobDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuil
     MyDetailLayout->GetObjectsBeingCustomized(ObjectsBeingCustomized);
     Settings = Cast<UDeadlineCloudJob>(ObjectsBeingCustomized[0].Get());
 
-    TSharedPtr<SConsistencyUpdateWidget> ConsistencyUpdateWidget;
+	TSharedPtr<FDeadlineCloudDetailsWidgetsHelper::SConsistencyWidget> ConsistencyUpdateWidget;
     FParametersConsistencyCheckResult result;
 
     /* Consistency check */
     if (Settings.IsValid() && Settings->GetJobParameters().Num() > 0)
     {
         UDeadlineCloudJob* MyObject = Settings.Get();
-        CheckConsidtensyPassed = CheckConsistency(MyObject);
+        bCheckConsistensyPassed = CheckConsistency(MyObject);
     }
 
     /* If passed - Open job file*/
-    if (CheckConsidtensyPassed || Settings->GetJobParameters().Num() == 0)
+    if (bCheckConsistensyPassed || Settings->GetJobParameters().Num() == 0)
     {
         Settings->OpenJobFile(Settings->PathToTemplate.FilePath);
     }
@@ -115,11 +59,10 @@ void FDeadlineCloudJobDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuil
     IDetailCategoryBuilder& PropertiesCategory = MyDetailLayout->EditCategory("Parameters");
       
     PropertiesCategory.AddCustomRow(FText::FromString("Consistency"))
-		.Visibility(TAttribute<EVisibility>::Create(TAttribute<EVisibility>::FGetter::CreateSP(this, &FDeadlineCloudJobDetails::GetWidgetVisibility)))
+		.Visibility(TAttribute<EVisibility>::Create(TAttribute<EVisibility>::FGetter::CreateSP(this, &FDeadlineCloudJobDetails::GetConsistencyWidgetVisibility)))
         .WholeRowContent()
         [
-            SAssignNew(ConsistencyUpdateWidget, SConsistencyUpdateWidget)
-                //.Visibility(this, &FDeadlineCloudJobDetails::GetWidgetVisibility)
+		     SAssignNew(ConsistencyUpdateWidget, FDeadlineCloudDetailsWidgetsHelper::SConsistencyWidget)
                 .OnFixButtonClicked(FSimpleDelegate::CreateSP(this, &FDeadlineCloudJobDetails::OnButtonClicked))
         ];
 
@@ -143,6 +86,11 @@ bool FDeadlineCloudJobDetails::CheckConsistency(UDeadlineCloudJob* Job)
        
     UE_LOG(LogTemp, Warning, TEXT("check consistency result: %s"), *result.Reason);
     return result.Passed;
+}
+
+EVisibility FDeadlineCloudJobDetails::GetConsistencyWidgetVisibility() const
+{
+		return (!bCheckConsistensyPassed) ? EVisibility::Visible : EVisibility::Collapsed;
 }
 
 void FDeadlineCloudJobDetails::OnButtonClicked()
