@@ -108,46 +108,74 @@ void FDeadlineCloudStepDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBui
     DetailBuilder.GetObjectsBeingCustomized(ObjectsBeingCustomized);
     Settings = Cast<UDeadlineCloudStep>(ObjectsBeingCustomized[0].Get());
 
+	TSharedRef<IPropertyHandle> EnvironmentsHandle = MyDetailLayout->GetProperty("Environments");
+	IDetailPropertyRow* EnvironmentsRow = MyDetailLayout->EditDefaultProperty(EnvironmentsHandle);
+	TSharedPtr<SWidget> OutNameWidgetEnv;
+	TSharedPtr<SWidget> OutValueWidgetEnv;
+	EnvironmentsRow->GetDefaultWidgets(OutNameWidgetEnv, OutValueWidgetEnv);
+	EnvironmentsRow->ShowPropertyButtons(true);
+
+	EnvironmentsRow->CustomWidget(true)
+		.NameContent()
+		[
+			OutNameWidgetEnv.ToSharedRef()
+		]
+		.ValueContent()
+		[
+			SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.HAlign(HAlign_Left)
+				.VAlign(VAlign_Center)
+				[
+					SNew(STextBlock)
+						.Text(LOCTEXT("EnvironmentsError", "Contains empty or duplicate items"))
+						.Font(IDetailLayoutBuilder::GetDetailFont())
+						.ColorAndOpacity(FLinearColor::Red)
+						.Visibility(TAttribute<EVisibility>::Create(TAttribute<EVisibility>::FGetter::CreateSP(this, &FDeadlineCloudStepDetails::GetEnvironmentErrorWidgetVisibility)))
+				]
+				+ SHorizontalBox::Slot()
+				.HAlign(HAlign_Left)
+				.VAlign(VAlign_Center)
+				[
+					SNew(SOverlay)
+						.Visibility(TAttribute<EVisibility>::Create(TAttribute<EVisibility>::FGetter::CreateSP(this, &FDeadlineCloudStepDetails::GetEnvironmentDefaultWidgetVisibility)))
+						+ SOverlay::Slot()
+						[
+							OutValueWidgetEnv.ToSharedRef()
+						]
+				]
+		];	
+
     if (Settings.IsValid() && (MyDetailLayout != nullptr))
     {
         Settings->OnSomethingChanged = FSimpleDelegate::CreateSP(this, &FDeadlineCloudStepDetails::ForceRefreshDetails);
     };
+}
 
-    //FString CurrentName;
+bool FDeadlineCloudStepDetails::IsEnvironmentContainsErrors() const
+{
+	TArray<UObject*> ExistingEnvironment;
+	for (auto Environment : Settings->Environments)
+	{
+		if (!IsValid(Environment) || ExistingEnvironment.Contains(Environment))
+		{
+			return true;
+		}
 
-    //if (Settings->PathToTemplate.FilePath.Len() > 0)
-    //{
-    //    TArray <FStepTaskParameterDefinition> Parameters;
-    //    Settings->OpenStepFile(Settings->PathToTemplate.FilePath);
-    //    Parameters = Settings->GetStepParameters();
-    //    if (Parameters.Num() > 0) {
+		ExistingEnvironment.Add(Environment);
+	}
 
-    //        IDetailCategoryBuilder& PropertiesCategory = DetailBuilder.EditCategory("DeadlineCloudStepParameters");
+	return false;
+}
 
-    //        for (auto& StepParameter : Parameters) {
+EVisibility FDeadlineCloudStepDetails::GetEnvironmentErrorWidgetVisibility() const
+{
+	return IsEnvironmentContainsErrors() ? EVisibility::Visible : EVisibility::Collapsed;
+}
 
-    //            CurrentName = StepParameter.Name;
-
-    //            {
-    //                PropertiesCategory.AddCustomRow(LOCTEXT("Parameter Definitions", "Parameter Definitions"))
-    //                    .NameContent()
-    //                    [CreateStepNameWidget(StepParameter.Name)]
-    //                    .ValueContent()
-    //                    [GenerateStringsArrayContent(StepParameter.Range)];
-    //            }
-
-    //        }
-    //    }
-    //    else
-    //    {
-    //        UE_LOG(LogTemp, Error, TEXT("PARAMETERS PARSING ERROR"));
-    //    }
-    //}
-
-    //else
-    //{
-    //    UE_LOG(LogTemp, Warning, TEXT("Empty step path string"));
-    //}
+EVisibility FDeadlineCloudStepDetails::GetEnvironmentDefaultWidgetVisibility() const
+{
+	return IsEnvironmentContainsErrors() ? EVisibility::Collapsed : EVisibility::Visible;
 }
 
 void FDeadlineCloudStepParametersArrayCustomization::CustomizeHeader(TSharedRef<IPropertyHandle> InPropertyHandle, FDetailWidgetRow& InHeaderRow, IPropertyTypeCustomizationUtils& InCustomizationUtils)
