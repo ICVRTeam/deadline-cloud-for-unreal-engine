@@ -11,88 +11,32 @@
 #include "Widgets/Input/SFilePathPicker.h"
 #include "IDetailChildrenBuilder.h"
 #include "Widgets/Input/SNumericEntryBox.h"
-
+#include "PythonAPILibraries/PythonParametersConsistencyChecker.h"
 #include "DeadlineCloudJobSettings/DeadlineCloudDetailsWidgetsHelper.h"
 
 #define LOCTEXT_NAMESPACE "StepDetails"
 
 
+
+bool FDeadlineCloudStepDetails::CheckConsistency(UDeadlineCloudStep* Step)
+{
+	FParametersConsistencyCheckResult result;
+	result = Step->CheckStepParametersConsistency(Step);
+
+	UE_LOG(LogTemp, Warning, TEXT("Check consistency result: %s"), *result.Reason);
+	return result.Passed;
+}
+
+void FDeadlineCloudStepDetails::OnButtonClicked()
+{
+	Settings->FixStepParametersConsistency(Settings.Get());
+	UE_LOG(LogTemp, Warning, TEXT("FixStepParametersConsistency"));
+	ForceRefreshDetails();
+}
+
 void FDeadlineCloudStepDetails::ForceRefreshDetails()
 {
     MyDetailLayout->ForceRefreshDetails();
-}
-
-TSharedRef<SWidget> FDeadlineCloudStepDetails::GenerateStringsArrayContent(const TArray<FString>& StringArray)
-{
-
-    TSharedRef<SVerticalBox> VBox = SNew(SVerticalBox);
-    if (StringArray.Num() > 0)
-    {
-        for (const FString& Str : StringArray)
-        {
-            VBox->AddSlot()
-                .AutoHeight()
-                .Padding(5)
-                [
-                    SNew(SEditableTextBox)
-                        .Text(FText::FromString(Str))
-                ];
-        }
-    }
-
-    return VBox;
-}
-
-TSharedRef<SWidget> FDeadlineCloudStepDetails::GenerateTasksContent(const TArray<FStepTaskParameterDefinition> tasks)
-{
-
-    TSharedRef<SVerticalBox> VBox = SNew(SVerticalBox);
-    if (tasks.Num() > 0)
-    {
-        for (auto& task : tasks)
-        {
-            VBox->AddSlot()
-                .AutoHeight()
-                .HAlign(HAlign_Fill)
-                .Padding(2)
-                [
-                    SNew(SHorizontalBox)
-
-                        + SHorizontalBox::Slot()
-                        .AutoWidth()
-                        .VAlign(VAlign_Top)
-                        .Padding(2)
-                        [
-                            SNew(STextBlock)
-                                .Text(FText::FromString(task.Name))
-                        ]
-
-                        + SHorizontalBox::Slot()
-                        //.FillWidth(1.0f)
-                        .VAlign(VAlign_Top)
-                        .Padding(2)
-                        [
-                            SNew(SEditableTextBox)
-                                .Text(FText::FromString(""))
-                        ]
-
-                        + SHorizontalBox::Slot()
-                        .AutoWidth()
-                        .VAlign(VAlign_Top)
-                        .Padding(2)
-                        [
-                            SNew(SVerticalBox)
-                                + SVerticalBox::Slot()
-                                .AutoHeight()
-                                [
-                                    this->GenerateStringsArrayContent(task.Range)
-                                ]
-                        ]
-                ];
-        }
-    }
-
-    return VBox;
 }
 
 /*Details*/
@@ -108,43 +52,31 @@ void FDeadlineCloudStepDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBui
     DetailBuilder.GetObjectsBeingCustomized(ObjectsBeingCustomized);
     Settings = Cast<UDeadlineCloudStep>(ObjectsBeingCustomized[0].Get());
 
-	TSharedRef<IPropertyHandle> EnvironmentsHandle = MyDetailLayout->GetProperty("Environments");
-	IDetailPropertyRow* EnvironmentsRow = MyDetailLayout->EditDefaultProperty(EnvironmentsHandle);
-	TSharedPtr<SWidget> OutNameWidgetEnv;
-	TSharedPtr<SWidget> OutValueWidgetEnv;
-	EnvironmentsRow->GetDefaultWidgets(OutNameWidgetEnv, OutValueWidgetEnv);
-	EnvironmentsRow->ShowPropertyButtons(true);
+	TSharedPtr<FDeadlineCloudDetailsWidgetsHelper::SConsistencyWidget> ConsistencyUpdateWidget;
+	FParametersConsistencyCheckResult result;
 
-	EnvironmentsRow->CustomWidget(true)
-		.NameContent()
+	/* Consistency check */
+	if (Settings.IsValid() && Settings->GetStepParameters().Num() > 0)
+	{
+		UDeadlineCloudStep* MyObject = Settings.Get();
+		bCheckConsistensyPassed = CheckConsistency(MyObject);
+	}
+
+	/* If passed - Open job file*/
+	if (bCheckConsistensyPassed || Settings->GetStepParameters().Num() == 0)
+	{
+		Settings->OpenStepFile(Settings->PathToTemplate.FilePath);
+	}
+
+	IDetailCategoryBuilder& PropertiesCategory = MyDetailLayout->EditCategory("Parameters");
+
+	PropertiesCategory.AddCustomRow(FText::FromString("Consistency"))
+		.Visibility(TAttribute<EVisibility>::Create(TAttribute<EVisibility>::FGetter::CreateSP(this, &FDeadlineCloudStepDetails::GetWidgetVisibility)))
+		.WholeRowContent()
 		[
-			OutNameWidgetEnv.ToSharedRef()
-		]
-		.ValueContent()
-		[
-			SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot()
-				.HAlign(HAlign_Left)
-				.VAlign(VAlign_Center)
-				[
-					SNew(STextBlock)
-						.Text(LOCTEXT("EnvironmentsError", "Contains empty or duplicate items"))
-						.Font(IDetailLayoutBuilder::GetDetailFont())
-						.ColorAndOpacity(FLinearColor::Red)
-						.Visibility(TAttribute<EVisibility>::Create(TAttribute<EVisibility>::FGetter::CreateSP(this, &FDeadlineCloudStepDetails::GetEnvironmentErrorWidgetVisibility)))
-				]
-				+ SHorizontalBox::Slot()
-				.HAlign(HAlign_Left)
-				.VAlign(VAlign_Center)
-				[
-					SNew(SOverlay)
-						.Visibility(TAttribute<EVisibility>::Create(TAttribute<EVisibility>::FGetter::CreateSP(this, &FDeadlineCloudStepDetails::GetEnvironmentDefaultWidgetVisibility)))
-						+ SOverlay::Slot()
-						[
-							OutValueWidgetEnv.ToSharedRef()
-						]
-				]
-		];	
+			SAssignNew(ConsistencyUpdateWidget, FDeadlineCloudDetailsWidgetsHelper::SConsistencyWidget)
+				.OnFixButtonClicked(FSimpleDelegate::CreateSP(this, &FDeadlineCloudStepDetails::OnButtonClicked))
+		];
 
     if (Settings.IsValid() && (MyDetailLayout != nullptr))
     {

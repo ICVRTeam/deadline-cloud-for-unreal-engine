@@ -70,24 +70,20 @@ private:
 
 class FDeadlineCloudEnvironmentDetails : public IDetailCustomization
 {
-private:
-
-
 public:
 
     static TSharedRef<IDetailCustomization> MakeInstance();
     virtual  void CustomizeDetails(IDetailLayoutBuilder& DetailBuilder) override;
     IDetailLayoutBuilder* MyDetailLayout;
-
     TWeakObjectPtr<UDeadlineCloudEnvironment> Settings;
-  
-public:
 
-protected:
+	void OnButtonClicked();
+	EVisibility GetWidgetVisibility() const	{ return (!bCheckConsistensyPassed) ? EVisibility::Visible : EVisibility::Collapsed; }
 
 private:
 
     void ForceRefreshDetails();
-
+	bool CheckConsistency(UDeadlineCloudEnvironment* Env);
+	bool bCheckConsistensyPassed = true;
 };
 

@@ -36,9 +36,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parameters", meta = (DisplayPriority = 5))
 	TArray<UDeadlineCloudEnvironment*> Environments;
 
-	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parameters", meta = (DisplayPriority = 4))
-	//TArray<FStepTaskParameterDefinition> TaskParameterDefinitions;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parameters", meta = (DisplayPriority = 4))
 	FDeadlineCloudStepParametersArray TaskParameterDefinitions;
 
@@ -58,7 +55,10 @@ public:
 	void OpenStepFile(const FString& Path);
 
 	UFUNCTION()
-	void CheckStepParametersConsistency(UDeadlineCloudStep* Self);
+	FParametersConsistencyCheckResult CheckStepParametersConsistency(UDeadlineCloudStep* Step);
+
+	UFUNCTION(BlueprintCallable, Category = "Parameters")
+	void FixStepParametersConsistency(UDeadlineCloudStep* Step);
 
     UFUNCTION(BlueprintCallable, Category="Parameters")
 	TArray<FStepTaskParameterDefinition> GetStepParameters();
