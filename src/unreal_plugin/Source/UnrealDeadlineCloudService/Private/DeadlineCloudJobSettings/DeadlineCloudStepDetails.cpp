@@ -52,6 +52,44 @@ void FDeadlineCloudStepDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBui
     DetailBuilder.GetObjectsBeingCustomized(ObjectsBeingCustomized);
     Settings = Cast<UDeadlineCloudStep>(ObjectsBeingCustomized[0].Get());
 
+    TSharedRef<IPropertyHandle> EnvironmentsHandle = MyDetailLayout->GetProperty("Environments");
+	IDetailPropertyRow* EnvironmentsRow = MyDetailLayout->EditDefaultProperty(EnvironmentsHandle);
+	TSharedPtr<SWidget> OutNameWidgetEnv;
+	TSharedPtr<SWidget> OutValueWidgetEnv;
+	EnvironmentsRow->GetDefaultWidgets(OutNameWidgetEnv, OutValueWidgetEnv);
+	EnvironmentsRow->ShowPropertyButtons(true);
+
+	EnvironmentsRow->CustomWidget(true)
+		.NameContent()
+		[
+			OutNameWidgetEnv.ToSharedRef()
+		]
+		.ValueContent()
+		[
+			SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.HAlign(HAlign_Left)
+				.VAlign(VAlign_Center)
+				[
+					SNew(STextBlock)
+						.Text(LOCTEXT("EnvironmentsError", "Contains empty or duplicate items"))
+						.Font(IDetailLayoutBuilder::GetDetailFont())
+						.ColorAndOpacity(FLinearColor::Red)
+						.Visibility(TAttribute<EVisibility>::Create(TAttribute<EVisibility>::FGetter::CreateSP(this, &FDeadlineCloudStepDetails::GetEnvironmentErrorWidgetVisibility)))
+				]
+				+ SHorizontalBox::Slot()
+				.HAlign(HAlign_Left)
+				.VAlign(VAlign_Center)
+				[
+					SNew(SOverlay)
+						.Visibility(TAttribute<EVisibility>::Create(TAttribute<EVisibility>::FGetter::CreateSP(this, &FDeadlineCloudStepDetails::GetEnvironmentDefaultWidgetVisibility)))
+						+ SOverlay::Slot()
+						[
+							OutValueWidgetEnv.ToSharedRef()
+						]
+				]
+		];
+
 	TSharedPtr<FDeadlineCloudDetailsWidgetsHelper::SConsistencyWidget> ConsistencyUpdateWidget;
 	FParametersConsistencyCheckResult result;
 
@@ -82,6 +120,32 @@ void FDeadlineCloudStepDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBui
     {
         Settings->OnSomethingChanged = FSimpleDelegate::CreateSP(this, &FDeadlineCloudStepDetails::ForceRefreshDetails);
     };
+}
+
+bool FDeadlineCloudStepDetails::IsEnvironmentContainsErrors() const
+{
+	TArray<UObject*> ExistingEnvironment;
+	for (auto Environment : Settings->Environments)
+	{
+		if (!IsValid(Environment) || ExistingEnvironment.Contains(Environment))
+		{
+			return true;
+		}
+
+		ExistingEnvironment.Add(Environment);
+	}
+
+	return false;
+}
+
+EVisibility FDeadlineCloudStepDetails::GetEnvironmentErrorWidgetVisibility() const
+{
+	return IsEnvironmentContainsErrors() ? EVisibility::Visible : EVisibility::Collapsed;
+}
+
+EVisibility FDeadlineCloudStepDetails::GetEnvironmentDefaultWidgetVisibility() const
+{
+	return IsEnvironmentContainsErrors() ? EVisibility::Collapsed : EVisibility::Visible;
 }
 
 void FDeadlineCloudStepParametersArrayCustomization::CustomizeHeader(TSharedRef<IPropertyHandle> InPropertyHandle, FDetailWidgetRow& InHeaderRow, IPropertyTypeCustomizationUtils& InCustomizationUtils)
