@@ -56,6 +56,83 @@ void FDeadlineCloudJobDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuil
         Settings->OpenJobFile(Settings->PathToTemplate.FilePath);
     }
 
+    TSharedRef<IPropertyHandle> StepsHandle = MyDetailLayout->GetProperty("Steps");
+	IDetailPropertyRow* StepsRow = MyDetailLayout->EditDefaultProperty(StepsHandle);
+	TSharedPtr<SWidget> OutNameWidget;
+	TSharedPtr<SWidget> OutValueWidget;
+	StepsRow->GetDefaultWidgets(OutNameWidget, OutValueWidget);
+	StepsRow->ShowPropertyButtons(true);
+
+	StepsRow->CustomWidget(true)
+		.NameContent()
+		[
+			OutNameWidget.ToSharedRef()
+		]
+		.ValueContent()
+		[
+			SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.HAlign(HAlign_Left)
+				.VAlign(VAlign_Center)
+				[
+					SNew(STextBlock)
+						.Text(LOCTEXT("StepsError", "Contains empty or duplicate items"))
+						.Font(IDetailLayoutBuilder::GetDetailFont())
+						.ColorAndOpacity(FLinearColor::Red)
+						.Visibility(TAttribute<EVisibility>::Create(TAttribute<EVisibility>::FGetter::CreateSP(this, &FDeadlineCloudJobDetails::GetStepErrorWidgetVisibility)))
+				]
+				+ SHorizontalBox::Slot()
+				.HAlign(HAlign_Left)
+				.VAlign(VAlign_Center)
+				[
+					SNew(SOverlay)
+						.Visibility(TAttribute<EVisibility>::Create(TAttribute<EVisibility>::FGetter::CreateSP(this, &FDeadlineCloudJobDetails::GetStepDefaultWidgetVisibility)))
+						+ SOverlay::Slot()
+						[
+							OutValueWidget.ToSharedRef()
+						]
+				]
+
+		];
+
+	TSharedRef<IPropertyHandle> EnvironmentsHandle = MyDetailLayout->GetProperty("Environments");
+	IDetailPropertyRow* EnvironmentsRow = MyDetailLayout->EditDefaultProperty(EnvironmentsHandle);
+	TSharedPtr<SWidget> OutNameWidgetEnv;
+	TSharedPtr<SWidget> OutValueWidgetEnv;
+	EnvironmentsRow->GetDefaultWidgets(OutNameWidgetEnv, OutValueWidgetEnv);
+	EnvironmentsRow->ShowPropertyButtons(true);
+
+	EnvironmentsRow->CustomWidget(true)
+		.NameContent()
+		[
+			OutNameWidgetEnv.ToSharedRef()
+		]
+		.ValueContent()
+		[
+			SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.HAlign(HAlign_Left)
+				.VAlign(VAlign_Center)
+				[
+					SNew(STextBlock)
+						.Text(LOCTEXT("EnvironmentsError", "Contains empty or duplicate items"))
+						.Font(IDetailLayoutBuilder::GetDetailFont())
+						.ColorAndOpacity(FLinearColor::Red)
+						.Visibility(TAttribute<EVisibility>::Create(TAttribute<EVisibility>::FGetter::CreateSP(this, &FDeadlineCloudJobDetails::GetEnvironmentErrorWidgetVisibility)))
+				]
+				+ SHorizontalBox::Slot()
+				.HAlign(HAlign_Left)
+				.VAlign(VAlign_Center)
+				[
+					SNew(SOverlay)
+						.Visibility(TAttribute<EVisibility>::Create(TAttribute<EVisibility>::FGetter::CreateSP(this, &FDeadlineCloudJobDetails::GetEnvironmentDefaultWidgetVisibility)))
+						+ SOverlay::Slot()
+						[
+							OutValueWidgetEnv.ToSharedRef()
+						]
+				]
+		];
+
     IDetailCategoryBuilder& PropertiesCategory = MyDetailLayout->EditCategory("Parameters");
       
     PropertiesCategory.AddCustomRow(FText::FromString("Consistency"))

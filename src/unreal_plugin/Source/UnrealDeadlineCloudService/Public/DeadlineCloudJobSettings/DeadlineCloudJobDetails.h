@@ -106,5 +106,13 @@ private:
     void ForceRefreshDetails();
     bool CheckConsistency(UDeadlineCloudJob* Job);
     bool bCheckConsistensyPassed = true;
+
+    bool IsStepContainsErrors() const;
+	EVisibility GetStepErrorWidgetVisibility() const;
+	EVisibility GetStepDefaultWidgetVisibility() const;
+
+	bool IsEnvironmentContainsErrors() const;
+	EVisibility GetEnvironmentErrorWidgetVisibility() const;
+	EVisibility GetEnvironmentDefaultWidgetVisibility() const;
 };
 
