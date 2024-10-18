@@ -14,14 +14,16 @@ from deadline.unreal_submitter import settings
 from deadline.unreal_submitter.unreal_dependency_collector import DependencyCollector, DependencyFilters
 from deadline.unreal_submitter.unreal_open_job.unreal_open_job_entity import (
     UnrealOpenJobEntity,
-    PARAMETER_DEFINITION_MAPPING
+    OpenJobParameterNames,
+    PARAMETER_DEFINITION_MAPPING,
 )
 from deadline.unreal_submitter.unreal_open_job.unreal_open_job_step import (
     UnrealOpenJobStep,
     RenderUnrealOpenJobStep
 )
 from deadline.unreal_submitter.unreal_open_job.unreal_open_job_environment import (
-    UnrealOpenJobEnvironment
+    UnrealOpenJobEnvironment,
+    UnrealOpenJobUgsEnvironment
 )
 
 
@@ -280,6 +282,7 @@ class RenderUnrealOpenJob(UnrealOpenJob):
     """
 
     job_environment_map = {
+        unreal.DeadlineCloudUgsEnvironment: UnrealOpenJobUgsEnvironment
     }
 
     job_step_map = {
@@ -353,13 +356,19 @@ class RenderUnrealOpenJob(UnrealOpenJob):
             job_step.host_requirements = data_asset.job_preset_struct.host_requirements
             steps.append(job_step)
 
+        environments = []
+        for source_environment in data_asset.environments:
+            job_env_cls = cls.job_environment_map.get(type(source_environment), UnrealOpenJobEnvironment)
+            job_env = job_env_cls.from_data_asset(source_environment)
+            environments.append(job_env)
+
         shared_settings = data_asset.job_preset_struct.job_shared_settings
 
         return cls(
             file_path=data_asset.path_to_template,
             name=None if shared_settings.name in ['', 'Untitled'] else shared_settings.name,
             steps=steps,
-            environments=[UnrealOpenJobEnvironment.from_data_asset(env) for env in data_asset.environments],
+            environments=environments,
             extra_parameters=data_asset.get_job_parameters(),
             job_shared_settings=shared_settings,
             changelist_number=None,  # TODO data_asset.changelist_number,
@@ -371,22 +380,43 @@ class RenderUnrealOpenJob(UnrealOpenJob):
         render_step = next((s for s in data_asset.steps if isinstance(s, unreal.DeadlineCloudRenderStep)), None)
         return render_step is not None
 
+    @staticmethod
+    def update_job_parameter_values(
+            job_parameter_values: list[dict[str, Any]],
+            job_parameter_name: str,
+            job_parameter_value: Any
+    ) -> list[dict[str, Any]]:
+        param = next((p for p in job_parameter_values if p['name'] == job_parameter_name), None)
+        if param:
+            param['value'] = job_parameter_value
+        else:
+            job_parameter_values.append(dict(name=job_parameter_name, value=job_parameter_value))
+
+        return job_parameter_values
+
     def _build_parameter_values(self):
 
         parameter_values = super()._build_parameter_values()
 
-        ue_cmd_args = ' '.join(self._get_ue_cmd_args())
-        extra_cmd_args_param = next((p for p in parameter_values if p['name'] == 'ExtraCmdArgs'), None)
-        if extra_cmd_args_param:
-            extra_cmd_args_param['value'] = ue_cmd_args
-        else:
-            parameter_values.append(dict(name='ExtraCmdArgs', value=ue_cmd_args))
+        parameter_values = RenderUnrealOpenJob.update_job_parameter_values(
+            job_parameter_values=parameter_values,
+            job_parameter_name=OpenJobParameterNames.UNREAL_EXTRA_CMD_ARGS,
+            job_parameter_value=' '.join(self._get_ue_cmd_args())
+        )
 
-        project_file_param = next((p for p in parameter_values if p['name'] == 'ProjectFilePath'), None)
-        if project_file_param:
-            project_file_param['value'] = common.get_project_file_path()
-        else:
-            parameter_values.append(dict(name='ProjectFilePath', value=common.get_project_file_path()))
+        parameter_values = RenderUnrealOpenJob.update_job_parameter_values(
+            job_parameter_values=parameter_values,
+            job_parameter_name=OpenJobParameterNames.UNREAL_PROJECT_PATH,
+            job_parameter_value=common.get_project_file_path()
+        )
+
+        for env in self._environments:
+            for parameter in env.get_used_job_parameter_values():
+                RenderUnrealOpenJob.update_job_parameter_values(
+                    job_parameter_values=parameter_values,
+                    job_parameter_name=parameter['name'],
+                    job_parameter_value=parameter['value']
+                )
 
         return parameter_values
 

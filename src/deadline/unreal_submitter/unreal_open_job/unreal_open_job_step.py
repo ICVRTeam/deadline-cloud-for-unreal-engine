@@ -7,6 +7,7 @@ from openjd.model.v2023_09._model import StepDependency
 
 from deadline.unreal_submitter.unreal_open_job.unreal_open_job_entity import (
     UnrealOpenJobEntity,
+    OpenJobStepParameterNames,
     PARAMETER_DEFINITION_MAPPING
 )
 from deadline.unreal_submitter.unreal_open_job.unreal_open_job_environment import UnrealOpenJobEnvironment
@@ -200,7 +201,6 @@ class UnrealOpenJobStep(UnrealOpenJobEntity):
                 param.update(dict(name=override_param.name, range=param_range))
 
             param_definition_cls = param_descriptor.task_parameter_openjd_class
-            unreal.log(f'STEP PARAM BUILD: {param}')
             step_parameter_definition_list.append(param_definition_cls(**param))
 
         return step_parameter_definition_list
@@ -373,17 +373,18 @@ class RenderUnrealOpenJobStep(UnrealOpenJobStep):
         """
 
         task_chunk_id_param_definition = RenderUnrealOpenJobStep.build_u_step_task_parameter(
-            'TaskChunkId', 'INT', [str(i) for i in range(self._get_chunk_ids_count())]
+            OpenJobStepParameterNames.TASK_CHUNK_ID, 'INT', [str(i) for i in range(self._get_chunk_ids_count())]
         )
         self._update_extra_parameter(task_chunk_id_param_definition)
 
         handler_param_definition = RenderUnrealOpenJobStep.build_u_step_task_parameter(
-            'Handler', 'STRING', ['render']
+            OpenJobStepParameterNames.ADAPTOR_HANDLER, 'STRING', ['render']
         )
         self._update_extra_parameter(handler_param_definition)
 
+        # TODO define which params set should be added: serialized manifest / mrq asset / seq, lvl, config
         manifest_param_definition = RenderUnrealOpenJobStep.build_u_step_task_parameter(
-            'QueueManifestPath', 'PATH', [self.queue_manifest_path]
+            OpenJobStepParameterNames.QUEUE_MANIFEST_PATH, 'PATH', [self.queue_manifest_path]
         )
         self._update_extra_parameter(manifest_param_definition)
 
