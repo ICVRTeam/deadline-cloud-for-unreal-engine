@@ -20,17 +20,12 @@
 #include "PythonAPILibraries/PythonParametersConsistencyChecker.h"
 
 
-BEGIN_DEFINE_SPEC(FDeadlinePluginSpec, "Deadline",
+BEGIN_DEFINE_SPEC(FDeadlinePluginJobSpec, "Deadline",
     EAutomationTestFlags::ProductFilter | EAutomationTestFlags::EditorContext);
 
 
 UDeadlineCloudJob* CreatedJobDataAsset;
 FParametersConsistencyCheckResult result;
-
-//Asset parameters
-FString PackageName = TEXT("/Game/Test/TestDeadlineJob");
-FString AssetName = TEXT("TestDeadlineJob");
-UPackage* Package;// = CreatePackage(*PackageName);
 
 //All filepaths
 FString PluginContentDir;
@@ -40,9 +35,9 @@ FString DefaultTemplate = "/Content/Python/openjd_templates/job_template.yml";
 FString ChangedTemplate = "/Test/";
 
 
-END_DEFINE_SPEC(FDeadlinePluginSpec);
+END_DEFINE_SPEC(FDeadlinePluginJobSpec);
 
-void FDeadlinePluginSpec::Define()
+void FDeadlinePluginJobSpec::Define()
 {
 
     Describe("FOpenDeadlineJob", [this]()
@@ -58,14 +53,8 @@ void FDeadlinePluginSpec::Define()
                         PathToJobTemplate = FPaths::Combine(PluginContentDir, DefaultTemplate);
                         FPaths::NormalizeDirectoryName(PathToJobTemplate);
 
-                        IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
-                        Package = CreatePackage(*PackageName);
-
                         //Create asset
-                        CreatedJobDataAsset = NewObject<UDeadlineCloudJob>(Package, UDeadlineCloudJob::StaticClass(), *AssetName, RF_Public | RF_Standalone);
-                        FAssetRegistryModule::AssetCreated(CreatedJobDataAsset);
-
-                        //Set template path
+                          CreatedJobDataAsset = NewObject<UDeadlineCloudJob>();
                         CreatedJobDataAsset->PathToTemplate.FilePath = PathToJobTemplate;
 
                     }
@@ -73,60 +62,40 @@ void FDeadlinePluginSpec::Define()
 
             It("Read DeadlineCloudJob from template", [this]()
                 {
-
-                    FString PackageFileName = FPackageName::LongPackageNameToFilename(PackageName, FPackageName::GetAssetPackageExtension());
-                    bool bSaved = UPackage::SavePackage(Package, CreatedJobDataAsset, RF_Public | RF_Standalone, *PackageFileName);
-                    ////
                     if (CreatedJobDataAsset)
                     {
                         CreatedJobDataAsset->OpenJobFile(CreatedJobDataAsset->PathToTemplate.FilePath);
                         if (CreatedJobDataAsset->GetJobParameters().Num() > 0)
                         {
                             TestTrue("Parameters ok", true);
-                            UE_LOG(LogTemp, Log, TEXT("TestDeadlineJob parameters uploaded from .yaml file"));
-                            //If passed - delete data asset
-
-                            {
-                                TArray<UObject*> ObjectsToDelete;
-                                ObjectsToDelete.Add(CreatedJobDataAsset);
-                                ObjectTools::ForceDeleteObjects(ObjectsToDelete, false);
-                                Package->MarkAsGarbage();
-                            }
                         }
 
                         else
                         {
                             TestFalse("Error reading from .yaml", false);
-                            UE_LOG(LogTemp, Error, TEXT("Error readimg from .yaml"));
                         }
                     }
                     else
                     {
                         TestFalse("Error creating asset", !(CreatedJobDataAsset != nullptr));
-                        UE_LOG(LogTemp, Error, TEXT("Error creating asset"));
                     }
                 });
 
-            It("Check DeadlineCloudJob consistency", [this]()
+            It("Check DeadlineCloudJob parameters consistency", [this]()
                 {
                     CreatedJobDataAsset->OpenJobFile(CreatedJobDataAsset->PathToTemplate.FilePath);
                     result = CreatedJobDataAsset->CheckJobParametersConsistency(CreatedJobDataAsset);
                     if (result.Passed == true) {
                         TestTrue("Parameters are consistent", true);
-                        UE_LOG(LogTemp, Log, TEXT("%s"), *result.Reason);
                     }
                     else
                     {
                         TestFalse(result.Reason, (result.Passed == false));
-                        UE_LOG(LogTemp, Error, TEXT("%s"), *result.Reason);
                     }
                 });
 
-            It("Change template file DeadlineCloudJob check", [this]()
+            It("Change DeadlineCloudJob parameters in template", [this]()
                 {
-
-
-                   
                     FString DestinationDirectory = FPaths::Combine(FPaths::ProjectContentDir(), ChangedTemplate);
                     DestinationDirectory = FPaths::ConvertRelativePathToFull(DestinationDirectory);
                     FPaths::NormalizeDirectoryName(DestinationDirectory);
@@ -157,19 +126,17 @@ void FDeadlinePluginSpec::Define()
                                     TemplateContent.ReplaceInline(*str0, *str1);
                                     if (FFileHelper::SaveStringToFile(TemplateContent, *DestinationFilePath))
                                     {
-                                        UE_LOG(LogTemp, Log, TEXT("Text replaced and file saved successfully."));
 
                                         CreatedJobDataAsset->OpenJobFile(CreatedJobDataAsset->PathToTemplate.FilePath);
                                         CreatedJobDataAsset->PathToTemplate.FilePath = DestinationFilePath;
                                         result = CreatedJobDataAsset->CheckJobParametersConsistency(CreatedJobDataAsset);
                                         if (result.Passed == false) {
-                                            TestTrue("Parameters are non-consistent", true);
-                                            UE_LOG(LogTemp, Log, TEXT("Parameters are non-consistent %s"), *result.Reason);
+                                            TestTrue("Parameters are non-consistent as expected", true);
                                         }
                                         else
                                         {
                                             TestFalse(result.Reason, (result.Passed == false));
-                                            UE_LOG(LogTemp, Error, TEXT("Check failed %s"), *result.Reason);
+
                                         }
                                     }
                                 }
@@ -182,13 +149,48 @@ void FDeadlinePluginSpec::Define()
                         }
 
                     }
-
                 });
 
-            //
+            It("Change DeadlineCloudJob parameters in data asset", [this]()
+                {
+                    CreatedJobDataAsset->OpenJobFile(CreatedJobDataAsset->PathToTemplate.FilePath);
+                    TArray <FParameterDefinition> Parameters = CreatedJobDataAsset->GetJobParameters();
+                    Parameters.RemoveAt(0);
+                    CreatedJobDataAsset->SetJobParameters(Parameters);
+
+                    result = CreatedJobDataAsset->CheckJobParametersConsistency(CreatedJobDataAsset);
+                    if (result.Passed == false) {
+                        TestTrue("Parameters are non-consistent as expected", true);
+                    }
+                    else
+                    {
+                        TestFalse(result.Reason, (result.Passed == false));
+                    }
+                });
+
+            It("Fix DeadlineCloudJob consistency", [this]()
+                {
+                    TArray<FParameterDefinition> EmptyArray;
+                    CreatedJobDataAsset->SetJobParameters(EmptyArray);
+                    result = CreatedJobDataAsset->CheckJobParametersConsistency(CreatedJobDataAsset);
+                    if (result.Passed == false) {
+
+                        CreatedJobDataAsset->FixJobParametersConsistency(CreatedJobDataAsset);
+                        result = CreatedJobDataAsset->CheckJobParametersConsistency(CreatedJobDataAsset);
+                        if (result.Passed == true)
+                        {
+                            TestTrue("Parameters consistency fixed", true);
+                        }
+                    }
+                    else
+                    {
+                        TestFalse(result.Reason, (result.Passed == false));                       
+                    }
+                });
         });
 
 
 }
+
 
 //#endif
