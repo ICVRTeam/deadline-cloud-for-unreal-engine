@@ -5,6 +5,11 @@ parameterDefinitions:
   type: PATH
   objectType: FILE
   dataFlow: IN
+  userInterface:
+    control: HIDDEN
 - name: ExtraCmdArgs
   type: STRING
   default: '-log'
+- name: Executable
+  type: STRING
+  default: 'UnrealEditor-Cmd'

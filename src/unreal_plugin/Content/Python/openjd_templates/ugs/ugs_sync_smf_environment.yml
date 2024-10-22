@@ -10,14 +10,14 @@ script:
       set "WorkspaceFolderName={{Param.PerforceStreamPath}}"
       set "WorkspaceFolderName=%WorkspaceFolderName:/=+%"
       cd /d %WorkspaceFolderName%
-      ugs sync -binaries -nogpf
+      ugs sync change={{Param.PerforceChangelistNumber}} -binaries -nogpf
       setx P4_CLIENT_DIRECTORY %CD%\%WorkspaceFolderName%
   actions:
     onEnter:
       command: '{{Env.File.UgsSync}}'
       cancelation:
         mode: NOTIFY_THEN_TERMINATE
-# TODO what the ugs variant for p4 sync //...#0
+# TODO what the ugs variant for p4 sync /...#0
 #    onExit:
 #      command: unreal-engine-openjd
 #      args:

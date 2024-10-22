@@ -20,7 +20,7 @@ script:
     type: TEXT
     data: |
       handler: {{Task.Param.Handler}}
-      queue_manifest_path: {{Task.Param.QueueManifestPath}}
+      queue_manifest_serialized: {{Task.Param.QueueManifestSerialized}}
   actions:
     onRun:
       command: unreal-engine-openjd
@@ -30,6 +30,6 @@ script:
       - --connection-file
       - '{{Session.WorkingDirectory}}/connection.json'
       - --run-data
-      - file://{{ Task.File.runData }}
+      - file://{{Task.File.runData}}
       cancelation:
         mode: NOTIFY_THEN_TERMINATE

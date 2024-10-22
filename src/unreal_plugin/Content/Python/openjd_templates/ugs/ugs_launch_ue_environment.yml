@@ -1,4 +1,4 @@
-name: LaunchUnrealEditor
+name: LaunchUnrealEditorWithUgs
 variables:
   REMOTE_EXECUTION: 'True'
 script:
@@ -7,8 +7,9 @@ script:
       filename: init-data.yaml
       type: TEXT
       data: |
-        project_path: {{Param.ProjectFilePath}}
+        project_path: %P4_CLIENT_ROOT%/{{Param.ProjectRelativePath}}
         extra_cmd_args: {{Param.ExtraCmdArgs}}
+        executable: %P4_CLIENT_ROOT%/{{Param.ExecutableRelativePath}}
   actions:
     onEnter:
       command: unreal-engine-openjd

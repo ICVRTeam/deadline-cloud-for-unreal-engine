@@ -1,3 +1,4 @@
+name: UgsSyncCmf
 variables:
     P4_CLIENTS_ROOT_DIRECTORY: 'D:/projects'
 script:
@@ -8,11 +9,11 @@ script:
     data: |
       cd /d %P4_CLIENTS_ROOT_DIRECTORY%
       ugs switch {{Param.PerforceStreamPath}}
-      ugs init {{Param.PerforceStreamPath}} -client=%USERNAME%_%COMPUTERNAME%_{{Param.UnrealProjectName}} -project={{Param.UnrealProjectRelativePath}}
+      ugs init {{Param.PerforceStreamPath}} -client=%USERNAME%_%COMPUTERNAME%_{{Param.ProjectName}} -project={{Param.ProjectRelativePath}}
       set "WorkspaceFolderName={{Param.PerforceStreamPath}}"
       set "WorkspaceFolderName=%WorkspaceFolderName:/=+%"
       cd /d %P4_CLIENTS_ROOT_DIRECTORY%\%WorkspaceFolderName%
-      ugs sync -binaries -nogpf
+      ugs sync change={{Param.PerforceChangelistNumber}} -binaries -nogpf
       setx P4_CLIENT_DIRECTORY %P4_CLIENTS_ROOT_DIRECTORY%\%WorkspaceFolderName%
   actions:
     onEnter:
