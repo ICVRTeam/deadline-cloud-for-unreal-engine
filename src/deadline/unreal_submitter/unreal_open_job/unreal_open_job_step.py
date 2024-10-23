@@ -277,13 +277,13 @@ class RenderUnrealOpenJobStep(UnrealOpenJobStep):
         :param shots_count: The shots count
         :type shots_count: int
         """
+
+        super().__init__(file_path, name, step_dependencies, environments, extra_parameters, host_requirements)
         
         self._task_chunk_size = task_chunk_size
         self._shots_count = shots_count
         self._queue_manifest_path = ''
         self._render_args_type = self._get_render_arguments_type()
-
-        super().__init__(file_path, name, step_dependencies, environments, extra_parameters, host_requirements)
 
     @property
     def task_chunk_size(self):
@@ -351,7 +351,7 @@ class RenderUnrealOpenJobStep(UnrealOpenJobStep):
             self._extra_parameters.remove(existed_parameter)
         self._extra_parameters.append(extra_parameter)
 
-    def _get_render_arguments_type(self) -> Optional[RenderUnrealOpenJobStep.RenderArgsType]:
+    def _get_render_arguments_type(self) -> Optional['RenderUnrealOpenJobStep.RenderArgsType']:
         parameter_names = [p.name for p in self._extra_parameters]
         for p in parameter_names:
             if p == OpenJobStepParameterNames.QUEUE_MANIFEST_PATH:
