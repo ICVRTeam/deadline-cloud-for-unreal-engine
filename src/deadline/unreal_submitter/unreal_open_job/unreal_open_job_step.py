@@ -161,7 +161,7 @@ class UnrealOpenJobStep(UnrealOpenJobEntity):
         return cls(
             file_path=data_asset.path_to_template,
             name=data_asset.name,
-            step_dependencies=[data_asset.depends_on],  # TODO depends_on should be list of steps
+            step_dependencies=list(data_asset.depends_on),
             environments=[UnrealOpenJobEnvironment.from_data_asset(env) for env in data_asset.environments],
             extra_parameters=data_asset.get_step_parameters()
         )
@@ -220,13 +220,14 @@ class UnrealOpenJobStep(UnrealOpenJobEntity):
             name=self.name,
             script=StepScript(**step_template_object['script']),
             parameterSpace=StepParameterSpaceDefinition(
-                taskParameterDefinitions=step_parameters
+                taskParameterDefinitions=step_parameters,
+                combination=step_template_object['parameterSpace'].get('combination')
             ) if step_parameters else None,
             stepEnvironments=[env.build_template() for env in self._environments] if self._environments else None,
             dependencies=[
                 StepDependency(dependsOn=step_dependency)
                 for step_dependency in self._step_dependencies
-            ] if all(self._step_dependencies) else None,
+            ] if self._step_dependencies else None,
             hostRequirements=host_requirements_template
         )
 
@@ -245,7 +246,7 @@ class RenderUnrealOpenJobStep(UnrealOpenJobStep):
             extra_parameters: list = None,
             host_requirements=None,
             task_chunk_size: int = 0,
-            shots_count: int = 0
+            mrq_job: unreal.MoviePipelineExecutorJob = None
     ):
         """
         :param file_path: The file path of the step descriptor
@@ -266,12 +267,12 @@ class RenderUnrealOpenJobStep(UnrealOpenJobStep):
         :param task_chunk_size: The task chunk size
         :type task_chunk_size: int
         
-        :param shots_count: The shots count
-        :type shots_count: int
+        :param mrq_job: MRQ Job object
+        :type mrq_job: unreal.MoviePipelineExecutorJob
         """
         
         self._task_chunk_size = task_chunk_size
-        self._shots_count = shots_count
+        self._mrq_job = mrq_job
         self._queue_manifest_path = ''
 
         super().__init__(file_path, name, step_dependencies, environments, extra_parameters, host_requirements)
@@ -285,12 +286,12 @@ class RenderUnrealOpenJobStep(UnrealOpenJobStep):
         self._task_chunk_size = value
 
     @property
-    def shots_count(self):
-        return self._shots_count
+    def mrq_job(self):
+        return self._mrq_job
 
-    @shots_count.setter
-    def shots_count(self, value: int):
-        self._shots_count = value
+    @mrq_job.setter
+    def mrq_job(self, value: unreal.MoviePipelineExecutorJob):
+        self._mrq_job = value
 
     @property
     def queue_manifest_path(self):
@@ -342,19 +343,21 @@ class RenderUnrealOpenJobStep(UnrealOpenJobStep):
         Get parameters
         """
 
-        if not self._shots_count:
-            raise ValueError('Shots count must be provided')
+        if not self.mrq_job:
+            raise ValueError('MRQ Job must be provided')
+
+        enabled_shots = [shot for shot in self.mrq_job.shot_info if shot.enabled]
 
         task_chunk_size_param = next((p for p in self._extra_parameters if p.name == 'TaskChunkSize'), None)
         if task_chunk_size_param is None:
             raise ValueError('Render Step\'s parameter "TaskChunkSize " must be provided')
 
         if len(task_chunk_size_param.range) == 0 or task_chunk_size_param.range[0] == 0:
-            task_chunk_size = self._shots_count  # by default 1 chunk consist of all the shots
+            task_chunk_size = len(enabled_shots)  # by default 1 chunk consist of all the shots
         else:
             task_chunk_size = int(task_chunk_size_param.range[0])
 
-        task_chunk_ids_count = math.ceil(self._shots_count / task_chunk_size)
+        task_chunk_ids_count = math.ceil(len(enabled_shots) / task_chunk_size)
         return task_chunk_ids_count
 
     def _find_extra_parameter_by_name(self, parameter_name: str) -> Optional[unreal.StepTaskParameterDefinition]:

@@ -283,7 +283,7 @@ class RenderUnrealOpenJob(UnrealOpenJob):
     }
 
     job_step_map = {
-        'Render': RenderUnrealOpenJobStep
+        unreal.DeadlineCloudRenderStep: RenderUnrealOpenJobStep
     }
 
     def __init__(
@@ -321,7 +321,7 @@ class RenderUnrealOpenJob(UnrealOpenJob):
             step.host_requirements = self._mrq_job.preset_overrides.host_requirements
 
             if isinstance(step, RenderUnrealOpenJobStep):
-                step.shots_count = len(self._mrq_job.shot_info)
+                step.mrq_job = self._mrq_job
                 step.queue_manifest_path = self._save_manifest_file()
 
         self.job_shared_settings = self._mrq_job.preset_overrides.job_shared_settings
@@ -343,9 +343,12 @@ class RenderUnrealOpenJob(UnrealOpenJob):
 
     @classmethod
     def from_data_asset(cls, data_asset: unreal.DeadlineCloudRenderJob) -> "RenderUnrealOpenJob":
+        if not RenderUnrealOpenJob.render_job_asset_has_render_step(data_asset):
+            raise Exception('RenderJob data asset should have RenderStep')
+
         steps = []
         for source_step in data_asset.steps:
-            job_step_cls = cls.job_step_map.get(source_step.name, UnrealOpenJobStep)
+            job_step_cls = cls.job_step_map.get(type(source_step), UnrealOpenJobStep)
             job_step = job_step_cls.from_data_asset(source_step)
             job_step.host_requirements = data_asset.job_preset_struct.host_requirements
             steps.append(job_step)
@@ -361,6 +364,12 @@ class RenderUnrealOpenJob(UnrealOpenJob):
             job_shared_settings=shared_settings,
             changelist_number=None,  # TODO data_asset.changelist_number,
         )
+
+    @staticmethod
+    def render_job_asset_has_render_step(data_asset: unreal.DeadlineCloudRenderJob) -> bool:
+        """ Check if given Render Job data asset has Render step or not """
+        render_step = next((s for s in data_asset.steps if isinstance(s, unreal.DeadlineCloudRenderStep)), None)
+        return render_step is not None
 
     def _build_parameter_values(self):
 
