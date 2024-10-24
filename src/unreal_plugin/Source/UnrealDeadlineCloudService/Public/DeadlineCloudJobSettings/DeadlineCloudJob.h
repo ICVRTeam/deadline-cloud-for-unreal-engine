@@ -2,6 +2,7 @@
 
 
 #include "DeadlineCloudStep.h"
+#include "DeadlineCloudRenderStep.h"
 #include "CoreMinimal.h"
 #include "DeadlineCloudEnvironment.h"
 #include "DeadlineCloudJob.generated.h"
@@ -297,6 +298,8 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "Parameters")
 	void FixJobParametersConsistency(UDeadlineCloudJob* Job);
+
+	TArray<FStepTaskParameterDefinition> GetTaskChunkSizeFromRenderStep() const;
 
 public:
 
