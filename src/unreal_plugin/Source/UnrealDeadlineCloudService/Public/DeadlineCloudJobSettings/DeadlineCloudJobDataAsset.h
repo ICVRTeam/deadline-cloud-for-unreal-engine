@@ -36,7 +36,7 @@ struct UNREALDEADLINECLOUDSERVICE_API FDeadlineCloudJobSharedSettingsStruct
 	int32 MaximumRetriesPerTask = 50;
 
 	/** Shots Chunk size */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Job Shared Settings", meta=(DisplayPriority=5))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Job Shared Settings", meta=(DisplayPriority=5, ClampMin="1"))
 	int32 TaskChunkSize = 1;
 
 	/** Extra cmd args */
