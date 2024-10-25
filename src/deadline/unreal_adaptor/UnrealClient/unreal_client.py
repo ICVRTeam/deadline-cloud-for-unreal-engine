@@ -29,7 +29,18 @@ class UnrealClient(WinClientInterface):
     def __init__(self, socket_path: str) -> None:
         super().__init__(socket_path)
         self.handler: BaseStepHandler
-        self.actions.update({"set_handler": self.set_handler})
+        self.actions.update(
+            {
+                'set_handler': self.set_handler,
+                'client_loaded': self.client_loaded
+            }
+        )
+
+    def client_loaded(self, *args, **kwargs) -> None:
+        """Log the message that UnrealClient loaded"""
+
+        import unreal
+        unreal.log(f'{self.__class__.__name__} loaded')
 
     def set_handler(self, handler_dict: dict) -> None:
         """Set the current Step Handler"""
