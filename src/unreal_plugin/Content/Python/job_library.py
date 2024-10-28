@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+
 import os
 
 import unreal
@@ -8,8 +10,6 @@ from deadline.unreal_submitter.unreal_dependency_collector.common import (
     DependencyFilters,
     os_path_from_unreal_path,
 )
-
-# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 
 
 @unreal.uclass()
