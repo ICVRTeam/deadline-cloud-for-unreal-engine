@@ -116,4 +116,12 @@ class TestUnrealSubmitter(unittest.TestCase):
 
 if __name__ == "__main__":
     suite = unittest.TestLoader().loadTestsFromTestCase(TestUnrealSubmitter)
-    unittest.TextTestRunner(stream=sys.stdout, buffer=True).run(suite)
+    result = unittest.TextTestRunner(stream=sys.stdout, buffer=True).run(suite)
+
+    unreal.log(
+        f"Test Case {suite} result: "
+        f"testsRun: {result.testsRun}; "
+        f"Successful: {result.wasSuccessful()}; "
+        f"Errors: {len(result.errors)}; "
+        f"Failures: {result.failures}"
+    )
