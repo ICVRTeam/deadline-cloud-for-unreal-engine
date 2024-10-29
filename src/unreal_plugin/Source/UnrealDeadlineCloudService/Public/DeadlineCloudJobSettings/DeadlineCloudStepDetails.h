@@ -25,6 +25,10 @@ public:
 
 	void GenerateWrapperStructHeaderRowContent(FDetailWidgetRow& NodeRow, TSharedRef<SWidget> NameContent);
 
+	bool IsResetToDefaultVisible(TSharedPtr<IPropertyHandle> PropertyHandle, FString InParameterName) const;
+
+	void ResetToDefaultHandler(TSharedPtr<IPropertyHandle> PropertyHandle, FString InParameterName) const;
+
 	static UDeadlineCloudStep* GetOuterStep(TSharedRef<IPropertyHandle> Handle);
 
 	FUIAction EmptyCopyPasteAction;
@@ -45,6 +49,9 @@ public:
 	{
 		return MakeShared<FDeadlineCloudStepParametersArrayCustomization>();
 	}
+
+
+	bool IsEnabled(TSharedRef<IPropertyHandle> InPropertyHandle) const;
 
 	FDeadlineCloudStepParametersArrayCustomization() {}
 	
