@@ -12,3 +12,6 @@ parameterDefinitions:
   type: PATH
   objectType: FILE
   dataFlow: IN
+- name: Executable
+  type: STRING
+  default: 'UnrealEditor-Cmd'

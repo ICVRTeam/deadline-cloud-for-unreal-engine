@@ -2,6 +2,7 @@ import os
 import re
 import json
 import unreal
+from enum import IntEnum
 from collections import OrderedDict
 from typing import List, Dict, Any
 
@@ -14,14 +15,16 @@ from deadline.unreal_submitter import settings
 from deadline.unreal_submitter.unreal_dependency_collector import DependencyCollector, DependencyFilters
 from deadline.unreal_submitter.unreal_open_job.unreal_open_job_entity import (
     UnrealOpenJobEntity,
-    PARAMETER_DEFINITION_MAPPING
+    OpenJobParameterNames,
+    PARAMETER_DEFINITION_MAPPING,
 )
 from deadline.unreal_submitter.unreal_open_job.unreal_open_job_step import (
     UnrealOpenJobStep,
     RenderUnrealOpenJobStep
 )
 from deadline.unreal_submitter.unreal_open_job.unreal_open_job_environment import (
-    UnrealOpenJobEnvironment
+    UnrealOpenJobEnvironment,
+    UnrealOpenJobUgsEnvironment
 )
 
 
@@ -191,7 +194,7 @@ class UnrealOpenJob(UnrealOpenJobEntity):
         parameter_values = []
         for param in job_template_object['parameterDefinitions']:
             extra_param = next((extra_p for extra_p in self._extra_parameters if extra_p.name == param['name']), None)
-            if extra_param:
+            if extra_param and extra_param.value is not None:
                 python_class = PARAMETER_DEFINITION_MAPPING.get(param['type']).python_class
                 param_value = python_class(extra_param.value)
             else:
@@ -280,6 +283,7 @@ class RenderUnrealOpenJob(UnrealOpenJob):
     """
 
     job_environment_map = {
+        unreal.DeadlineCloudUgsEnvironment: UnrealOpenJobUgsEnvironment
     }
 
     job_step_map = {
@@ -354,13 +358,19 @@ class RenderUnrealOpenJob(UnrealOpenJob):
             job_step.host_requirements = data_asset.job_preset_struct.host_requirements
             steps.append(job_step)
 
+        environments = []
+        for source_environment in data_asset.environments:
+            job_env_cls = cls.job_environment_map.get(type(source_environment), UnrealOpenJobEnvironment)
+            job_env = job_env_cls.from_data_asset(source_environment)
+            environments.append(job_env)
+
         shared_settings = data_asset.job_preset_struct.job_shared_settings
 
         return cls(
             file_path=data_asset.path_to_template,
             name=None if shared_settings.name in ['', 'Untitled'] else shared_settings.name,
             steps=steps,
-            environments=[UnrealOpenJobEnvironment.from_data_asset(env) for env in data_asset.environments],
+            environments=environments,
             extra_parameters=data_asset.get_job_parameters(),
             job_shared_settings=shared_settings,
             changelist_number=None,  # TODO data_asset.changelist_number,
@@ -371,6 +381,21 @@ class RenderUnrealOpenJob(UnrealOpenJob):
         """ Check if given Render Job data asset has Render step or not """
         render_step = next((s for s in data_asset.steps if isinstance(s, unreal.DeadlineCloudRenderStep)), None)
         return render_step is not None
+
+    @staticmethod
+    def update_job_parameter_values(
+            job_parameter_values: list[dict[str, Any]],
+            job_parameter_name: str,
+            job_parameter_value: Any,
+            create_if_not_exists: bool = False
+    ) -> list[dict[str, Any]]:
+        param = next((p for p in job_parameter_values if p['name'] == job_parameter_name), None)
+        if param:
+            param['value'] = job_parameter_value
+        elif create_if_not_exists:
+            job_parameter_values.append(dict(name=job_parameter_name, value=job_parameter_value))
+
+        return job_parameter_values
 
     def _write_cmd_args_to_file(self) -> str:
 
@@ -392,6 +417,14 @@ class RenderUnrealOpenJob(UnrealOpenJob):
 
         parameter_values = super()._build_parameter_values()
 
+        parameter_names = [p.name for p in self._extra_parameters]
+
+        if OpenJobParameterNames.UNREAL_EXTRA_CMD_ARGS in parameter_names:
+            parameter_values = RenderUnrealOpenJob.update_job_parameter_values(
+                job_parameter_values=parameter_values,
+                job_parameter_name=OpenJobParameterNames.UNREAL_EXTRA_CMD_ARGS,
+                job_parameter_value=' '.join(self._get_ue_cmd_args())
+            )
         cmd_args_file_path = self._write_cmd_args_to_file().replace('\\', '/')
 
         extra_cmd_args_param = next((p for p in parameter_values if p['name'] == 'ExtraCmdArgsFile'), None)
@@ -400,11 +433,21 @@ class RenderUnrealOpenJob(UnrealOpenJob):
         else:
             parameter_values.append(dict(name='ExtraCmdArgsFile', value=cmd_args_file_path))
 
-        project_file_param = next((p for p in parameter_values if p['name'] == 'ProjectFilePath'), None)
-        if project_file_param:
-            project_file_param['value'] = common.get_project_file_path()
-        else:
-            parameter_values.append(dict(name='ProjectFilePath', value=common.get_project_file_path()))
+        if OpenJobParameterNames.UNREAL_PROJECT_PATH:
+            parameter_values = RenderUnrealOpenJob.update_job_parameter_values(
+                job_parameter_values=parameter_values,
+                job_parameter_name=OpenJobParameterNames.UNREAL_PROJECT_PATH,
+                job_parameter_value=common.get_project_file_path()
+            )
+
+        for env in self._environments:
+            for parameter in env.get_used_job_parameter_values():
+                if parameter['name'] in parameter_names:
+                    RenderUnrealOpenJob.update_job_parameter_values(
+                        job_parameter_values=parameter_values,
+                        job_parameter_name=parameter['name'],
+                        job_parameter_value=parameter['value']
+                    )
 
         return parameter_values
 
@@ -521,20 +564,22 @@ class RenderUnrealOpenJob(UnrealOpenJob):
 
         asset_references = AssetReferences()
 
-        # add dependencies to attachments
-        os_dependencies = []
-        job_dependencies = self._collect_mrq_job_dependencies()
-        for dependency in job_dependencies:
-            os_dependency = common.os_path_from_unreal_path(dependency, with_ext=True)
-            if os.path.exists(os_dependency):
-                os_dependencies.append(os_dependency)
+        if next((env for env in self._environments if isinstance(env, UnrealOpenJobUgsEnvironment)), None) is None:
+            # add dependencies to attachments
+            os_dependencies = []
+            job_dependencies = self._collect_mrq_job_dependencies()
+            for dependency in job_dependencies:
+                os_dependency = common.os_path_from_unreal_path(dependency, with_ext=True)
+                if os.path.exists(os_dependency):
+                    os_dependencies.append(os_dependency)
 
-        asset_references.input_filenames.update(os_dependencies)
+            asset_references.input_filenames.update(os_dependencies)
 
-        # step_input_files = []
-        # for step in self._steps:
-        #     step_input_files.extend(step.get_step_input_files())
-        # asset_references.input_filenames.update(step_input_files)
+            # required input directories
+            for sub_dir in ["Config", "Binaries"]:
+                input_directory = common.os_abs_from_relative(sub_dir)
+                if os.path.exists(input_directory):
+                    asset_references.input_directories.add(input_directory)
 
         # add manifest to attachments
         if os.path.exists(self._manifest_path):
@@ -552,12 +597,6 @@ class RenderUnrealOpenJob(UnrealOpenJob):
         for input_file in job_input_files:
             if os.path.exists(input_file):
                 asset_references.input_filenames.add(input_file)
-
-        # required input directories
-        for sub_dir in ["Config", "Binaries"]:
-            input_directory = common.os_abs_from_relative(sub_dir)
-            if os.path.exists(input_directory):
-                asset_references.input_directories.add(input_directory)
 
         # input directories
         job_input_directories = [

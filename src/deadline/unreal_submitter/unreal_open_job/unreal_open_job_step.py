@@ -1,5 +1,6 @@
 import math
 import unreal
+from enum import IntEnum
 from typing import Any, Literal, Optional
 
 from openjd.model.v2023_09 import *
@@ -7,6 +8,7 @@ from openjd.model.v2023_09._model import StepDependency
 
 from deadline.unreal_submitter.unreal_open_job.unreal_open_job_entity import (
     UnrealOpenJobEntity,
+    OpenJobStepParameterNames,
     PARAMETER_DEFINITION_MAPPING
 )
 from deadline.unreal_submitter.unreal_open_job.unreal_open_job_environment import UnrealOpenJobEnvironment
@@ -236,6 +238,12 @@ class RenderUnrealOpenJobStep(UnrealOpenJobStep):
     Unreal Open Job Render Step entity
     """
 
+    class RenderArgsType(IntEnum):
+
+        QUEUE_MANIFEST_PATH = 0
+        RENDER_DATA = 2
+        MRQ_ASSET = 3
+
     def __init__(
             self,
             file_path: str,
@@ -269,12 +277,13 @@ class RenderUnrealOpenJobStep(UnrealOpenJobStep):
         :param mrq_job: MRQ Job object
         :type mrq_job: unreal.MoviePipelineExecutorJob
         """
+
+        super().__init__(file_path, name, step_dependencies, environments, extra_parameters, host_requirements)
         
         self._task_chunk_size = task_chunk_size
         self._mrq_job = mrq_job
         self._queue_manifest_path = ''
-
-        super().__init__(file_path, name, step_dependencies, environments, extra_parameters, host_requirements)
+        self._render_args_type = self._get_render_arguments_type()
 
     @property
     def task_chunk_size(self):
@@ -299,30 +308,6 @@ class RenderUnrealOpenJobStep(UnrealOpenJobStep):
     @queue_manifest_path.setter
     def queue_manifest_path(self, value):
         self._queue_manifest_path = value
-
-    @staticmethod
-    def validate_parameters(parameters: TaskParameterList) -> bool:
-        """
-        Validate the parameters
-        
-        :param parameters: The list of parameter entities
-        :type parameters: list
-        """
-        
-        param_names = [p.name for p in parameters]
-
-        if 'QueueManifestPath' in param_names:
-            return True
-        elif 'MoviePipelineQueuePath' in param_names:
-            return True
-        elif {'LevelSequencePath', 'LevelPath', 'MoviePipelineConfigurationPath'}.issubset(set(param_names)):
-            return True
-
-        raise ValueError('RenderOpenJobStep parameters are not valid. Expect at least one of the following:\n'
-                         '- QueueManifestPath\n'
-                         '- MoviePipelineQueuePath\n'
-                         '- LevelSequencePath, LevelPath, MoviePipelineConfigurationPath\n'
-                         )
 
     @staticmethod
     def build_u_step_task_parameter(
@@ -368,30 +353,50 @@ class RenderUnrealOpenJobStep(UnrealOpenJobStep):
             self._extra_parameters.remove(existed_parameter)
         self._extra_parameters.append(extra_parameter)
 
+    def _get_render_arguments_type(self) -> Optional['RenderUnrealOpenJobStep.RenderArgsType']:
+        parameter_names = [p.name for p in self._extra_parameters]
+        for p in parameter_names:
+            if p == OpenJobStepParameterNames.QUEUE_MANIFEST_PATH:
+                return RenderUnrealOpenJobStep.RenderArgsType.QUEUE_MANIFEST_PATH
+            if p == OpenJobStepParameterNames.MOVIE_PIPELINE_QUEUE_PATH:
+                return RenderUnrealOpenJobStep.RenderArgsType.MRQ_ASSET
+        if {
+            OpenJobStepParameterNames.LEVEL_SEQUENCE_PATH,
+            OpenJobStepParameterNames.LEVEL_PATH,
+            OpenJobStepParameterNames.MRQ_JOB_CONFIGURATION_PATH
+        }.issubset(set(param_names)):
+            return RenderUnrealOpenJobStep.RenderArgsType.RENDER_DATA
+
+        raise ValueError(
+            'RenderOpenJobStep parameters are not valid. Expect at least one of the following:\n'
+            f'- {OpenJobStepParameterNames.QUEUE_MANIFEST_PATH}\n'
+            f'- {OpenJobStepParameterNames.MOVIE_PIPELINE_QUEUE_PATH}\n'
+            f'- ({OpenJobStepParameterNames.LEVEL_SEQUENCE_PATH}, '
+            f'{OpenJobStepParameterNames.LEVEL_PATH}, '
+            f'{OpenJobStepParameterNames.MRQ_JOB_CONFIGURATION_PATH})\n'
+        )
+
     def _build_template(self) -> StepTemplate:
         """
         Build the definition template entity
         """
 
         task_chunk_id_param_definition = RenderUnrealOpenJobStep.build_u_step_task_parameter(
-            'TaskChunkId', 'INT', [str(i) for i in range(self._get_chunk_ids_count())]
+            OpenJobStepParameterNames.TASK_CHUNK_ID, 'INT', [str(i) for i in range(self._get_chunk_ids_count())]
         )
         self._update_extra_parameter(task_chunk_id_param_definition)
 
         handler_param_definition = RenderUnrealOpenJobStep.build_u_step_task_parameter(
-            'Handler', 'STRING', ['render']
+            OpenJobStepParameterNames.ADAPTOR_HANDLER, 'STRING', ['render']
         )
         self._update_extra_parameter(handler_param_definition)
 
-        manifest_param_definition = RenderUnrealOpenJobStep.build_u_step_task_parameter(
-            'QueueManifestPath', 'PATH', [self.queue_manifest_path]
-        )
-        self._update_extra_parameter(manifest_param_definition)
+        if self._render_args_type == RenderUnrealOpenJobStep.RenderArgsType.QUEUE_MANIFEST_PATH:
+            manifest_param_definition = RenderUnrealOpenJobStep.build_u_step_task_parameter(
+                OpenJobStepParameterNames.QUEUE_MANIFEST_PATH, 'PATH', [self.queue_manifest_path]
+            )
+            self._update_extra_parameter(manifest_param_definition)
 
         step_entity = super()._build_template()
-        
-        RenderUnrealOpenJobStep.validate_parameters(
-            step_entity.parameterSpace.taskParameterDefinitions
-        )
         
         return step_entity
