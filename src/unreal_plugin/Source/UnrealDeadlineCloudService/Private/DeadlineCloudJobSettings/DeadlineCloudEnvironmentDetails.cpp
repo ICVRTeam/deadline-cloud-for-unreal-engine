@@ -1,3 +1,5 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+
 #include "DeadlineCloudJobSettings/DeadlineCloudEnvironmentDetails.h"
 #include "DeadlineCloudJobSettings/DeadlineCloudEnvironment.h"
 #include "PropertyEditorModule.h"
@@ -131,18 +133,29 @@ void FDeadlineCloudEnvironmentParametersMapBuilder::GenerateChildContent(IDetail
 		TSharedPtr<SWidget> ValueWidget;
 
 		ItemRow.GetDefaultWidgets( NameWidget, ValueWidget);
-
 		ItemRow.CustomWidget(true)
 			.CopyAction(EmptyCopyPasteAction)
 			.PasteAction(EmptyCopyPasteAction)
-			.NameContent()
+			.WholeRowContent()
 			[
-				NameWidget.ToSharedRef()
-			]
-			.ValueContent()
-			[
-				ValueWidget.ToSharedRef()
+				SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot()
+					.AutoWidth()
+					.Padding(2.0f, 0.0f)
+					.HAlign(HAlign_Left)
+					.VAlign(VAlign_Center)
+					[
+						NameWidget.ToSharedRef()
+					]
+					+ SHorizontalBox::Slot()
+					.FillWidth(1.0f)
+					.Padding(2.0f, 0.0f)
+					[
+						ValueWidget.ToSharedRef()
+					]
 			];
+
+		NameWidget->SetEnabled(false);
 	}
 }
 
