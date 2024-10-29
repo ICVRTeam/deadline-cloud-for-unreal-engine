@@ -200,7 +200,6 @@ class UnrealOpenJobStep(UnrealOpenJobEntity):
                 param.update(dict(name=override_param.name, range=param_range))
 
             param_definition_cls = param_descriptor.task_parameter_openjd_class
-            unreal.log(f'STEP PARAM BUILD: {param}')
             step_parameter_definition_list.append(param_definition_cls(**param))
 
         return step_parameter_definition_list
@@ -210,7 +209,7 @@ class UnrealOpenJobStep(UnrealOpenJobEntity):
 
         step_parameters = self._build_step_parameter_definition_list()
 
-        if not self._host_requirements.run_on_all_worker_nodes:
+        if self._host_requirements and not self._host_requirements.run_on_all_worker_nodes:
             host_requirements = HostRequirements(host_requirements=self._host_requirements)
             host_requirements_template = HostRequirementsTemplate(**(host_requirements.as_dict()))
         else:
@@ -349,7 +348,6 @@ class RenderUnrealOpenJobStep(UnrealOpenJobStep):
         enabled_shots = [shot for shot in self.mrq_job.shot_info if shot.enabled]
 
         task_chunk_size_param = next((p for p in self._extra_parameters if p.name == 'TaskChunkSize'), None)
-        unreal.log(f'TaskChunkSize PARAM VALUE: {task_chunk_size_param}')
         if task_chunk_size_param is None:
             raise ValueError('Render Step\'s parameter "TaskChunkSize " must be provided')
 

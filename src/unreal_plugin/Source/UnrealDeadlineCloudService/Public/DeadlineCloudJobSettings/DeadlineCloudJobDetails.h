@@ -58,7 +58,9 @@ private:
     static UDeadlineCloudJob* GetOuterJob(TSharedRef<IPropertyHandle> Handle);
 
     void OnGenerateEntry(TSharedRef<IPropertyHandle> ElementProperty, int32 ElementIndex, IDetailChildrenBuilder& ChildrenBuilder) const;
+	bool IsResetToDefaultVisible(TSharedPtr<IPropertyHandle> PropertyHandle, FString InParameterName) const;
 
+	void ResetToDefaultHandler(TSharedPtr<IPropertyHandle> PropertyHandle, FString InParameterName) const;
     TSharedPtr<IPropertyHandleArray> ArrayProperty;
     TSharedRef<IPropertyHandle> BaseProperty;
 
