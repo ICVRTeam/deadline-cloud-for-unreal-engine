@@ -166,9 +166,10 @@ class UnrealAdaptor(Adaptor[AdaptorConfiguration]):
         while (
             self._unreal_is_running
             and not self._has_exception
-            and len(self._action_queue) > 0  # for now the initializing actions in the action queue, defined by
-                                             # _populate_client_loaded_action() method.
-                                             # So we wait for them to be done or for time is out.
+            and len(self._action_queue)
+            > 0  # for now the initializing actions in the action queue, defined by
+            # _populate_client_loaded_action() method.
+            # So we wait for them to be done or for time is out.
             and is_not_timed_out()
         ):
             time.sleep(0.1)
