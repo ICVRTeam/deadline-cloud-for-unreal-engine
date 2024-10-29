@@ -397,7 +397,7 @@ class RenderUnrealOpenJob(UnrealOpenJob):
 
         return job_parameter_values
 
-    def _write_cmd_args_to_file(self) -> str:
+    def _write_cmd_args_to_file(self, cmd_args_str: str) -> str:
 
         cmd_args_file = unreal.Paths.create_temp_filename(
             unreal.SystemLibrary.get_project_saved_directory(),
@@ -407,8 +407,7 @@ class RenderUnrealOpenJob(UnrealOpenJob):
 
         with open(cmd_args_file, 'w') as manifest:
             unreal.log(f"Saving ExtraCmdArgs file `{cmd_args_file}`")
-            ue_cmd_args = ' '.join(self._get_ue_cmd_args())
-            manifest.write(ue_cmd_args)
+            manifest.write(cmd_args_str)
 
         self._extra_cmd_args_file_path = unreal.Paths.convert_relative_path_to_full(cmd_args_file)
         return self._extra_cmd_args_file_path
@@ -419,19 +418,23 @@ class RenderUnrealOpenJob(UnrealOpenJob):
 
         parameter_names = [p.name for p in self._extra_parameters]
 
-        if OpenJobParameterNames.UNREAL_EXTRA_CMD_ARGS in parameter_names:
+        cmd_args_str = ' '.join(self._get_ue_cmd_args())
+
+        if len(cmd_args_str) > 1024 and OpenJobParameterNames.UNREAL_EXTRA_CMD_ARGS in parameter_names:
             parameter_values = RenderUnrealOpenJob.update_job_parameter_values(
                 job_parameter_values=parameter_values,
                 job_parameter_name=OpenJobParameterNames.UNREAL_EXTRA_CMD_ARGS,
                 job_parameter_value=' '.join(self._get_ue_cmd_args())
             )
-        cmd_args_file_path = self._write_cmd_args_to_file().replace('\\', '/')
 
-        extra_cmd_args_param = next((p for p in parameter_values if p['name'] == 'ExtraCmdArgsFile'), None)
-        if extra_cmd_args_param:
-            extra_cmd_args_param['value'] = cmd_args_file_path
-        else:
-            parameter_values.append(dict(name='ExtraCmdArgsFile', value=cmd_args_file_path))
+        if OpenJobParameterNames.UNREAL_EXTRA_CMD_ARGS_FILE in parameter_names:
+            cmd_args_file_path = self._write_cmd_args_to_file(cmd_args_str).replace('\\', '/')
+
+            parameter_values = RenderUnrealOpenJob.update_job_parameter_values(
+                job_parameter_values=parameter_values,
+                job_parameter_name=OpenJobParameterNames.UNREAL_EXTRA_CMD_ARGS_FILE,
+                job_parameter_value=cmd_args_file_path
+            )
 
         if OpenJobParameterNames.UNREAL_PROJECT_PATH:
             parameter_values = RenderUnrealOpenJob.update_job_parameter_values(

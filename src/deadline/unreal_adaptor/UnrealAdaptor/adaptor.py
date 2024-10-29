@@ -294,8 +294,7 @@ class UnrealAdaptor(Adaptor[AdaptorConfiguration]):
         if extra_cmd_str == '':
             extra_cmd_str = self.init_data.get("extra_cmd_args", "")
 
-
-        # Everythiing between -execcmds=" and " is the value we want to keep
+        # Everything between -execcmds=" and " is the value we want to keep
         match = re.search(r'-execcmds=["\']([^"\']*)["\']', extra_cmd_str)
         if match:
             execcmds_value = match.group(1)
