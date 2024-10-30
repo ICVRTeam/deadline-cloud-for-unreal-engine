@@ -7,9 +7,9 @@ script:
       filename: init-data.yaml
       type: TEXT
       data: |
+        executable: {{Param.Executable}}
         project_path: {{Param.ProjectFilePath}}
         extra_cmd_args: {{Param.ExtraCmdArgs}}
-        executable: {{Param.Executable}}
         extra_cmd_args_file: {{Param.ExtraCmdArgsFile}}
   actions:
     onEnter:
