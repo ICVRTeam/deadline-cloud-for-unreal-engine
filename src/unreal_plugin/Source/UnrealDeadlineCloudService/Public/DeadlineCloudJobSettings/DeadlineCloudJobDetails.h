@@ -52,7 +52,7 @@ public:
     FUIAction EmptyCopyPasteAction;
     FOnIsEnabled OnIsEnabled;
 
-    UMoviePipelineDeadlineCloudExecutorJob* MrqJob = nullptr;
+    TObjectPtr<UMoviePipelineDeadlineCloudExecutorJob> MrqJob;
 
 private:
     static UDeadlineCloudJob* GetOuterJob(TSharedRef<IPropertyHandle> Handle);
