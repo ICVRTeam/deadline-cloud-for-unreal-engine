@@ -169,9 +169,13 @@ void UMoviePipelineDeadlineCloudExecutorJob::PostEditChangeProperty(FPropertyCha
 			this->ParameterDefinitionOverrides.Parameters =
 				SelectedJobPreset->ParameterDefinition.Parameters;
 
-			// TODO bad design, we need to get overrides from all of the steps, not the only chunk size from render step
-			this->StepParameterOverrides.Parameters =
-				SelectedJobPreset->GetTaskChunkSizeFromRenderStep();
+			//Overrides from all of the steps
+
+			const TArray<UDeadlineCloudStep*> SelectedJobSteps = SelectedJobPreset->Steps;
+			for (auto step : SelectedJobSteps)
+			{
+				this->StepsParameterOverrides.Add(step->TaskParameterDefinitions);
+			}
 		}
 		// UpdateAttachmentFields();
 	}
