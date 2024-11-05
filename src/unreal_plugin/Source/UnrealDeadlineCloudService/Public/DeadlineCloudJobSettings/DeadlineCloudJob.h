@@ -41,13 +41,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Job Shared Settings", meta = (DisplayPriority = 4))
 	int32 MaximumRetriesPerTask = 50;
 
-	/** Shots Chunk size */
-	UPROPERTY(BlueprintReadWrite, Category = "Job Shared Settings", meta = (DisplayPriority = 5))
-	int32 TaskChunkSize = 1;
-
-	/** Extra cmd args */
-	UPROPERTY(BlueprintReadWrite, Category = "Job Shared Settings", meta = (DisplayPriority = 6))
-	FString ExtraCmdArgs = "";
+	/** Job priority */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Job Shared Settings", meta = (DisplayPriority = 5))
+	int32 Priority = 50;
 };
 
 /**
@@ -81,9 +77,13 @@ struct UNREALDEADLINECLOUDSERVICE_API FDeadlineCloudHostRequirementsStruct
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host requirements", meta = (ClampMin = 0, ClampMax = 10000, DisplayName = "Memory (GiB)", EditCondition = "!bRunOnAllWorkerNodes"))
 	FInt32Interval Memory = FInt32Interval(0, 0);
 
-	/** Required number of GPU */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host requirements", meta = (ClampMin = 0, ClampMax = 10000, DisplayName = "GPU Memory (GiB)", EditCondition = "!bRunOnAllWorkerNodes"))
+	/** Required numer of GPU */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host requirements", meta = (ClampMin = 0, ClampMax = 10000, DisplayName = "GPUs", EditCondition = "!bRunOnAllWorkerNodes"))
 	FInt32Interval GPUs = FInt32Interval(0, 0);
+
+	/** Required number of VRAM */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host requirements", meta = (ClampMin = 0, ClampMax = 10000, DisplayName = "GPU Memory (GiB)", EditCondition = "!bRunOnAllWorkerNodes"))
+	FInt32Interval GPU_Memory = FInt32Interval(0, 0);
 
 	/** Required amount of scratch space */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Host requirements", meta = (ClampMin = 0, ClampMax = 10000, DisplayName = "Scratch Space", EditCondition = "!bRunOnAllWorkerNodes"))
