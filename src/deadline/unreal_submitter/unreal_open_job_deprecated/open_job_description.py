@@ -1,3 +1,4 @@
+#  Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 import os
 import re
 
@@ -160,6 +161,30 @@ class OpenJobDescription:
         Returns the OpenJob job bundle path
         """
         return self._job_bundle_path
+
+    @staticmethod
+    def get_enabled_shot_names(mrq_job: unreal.MoviePipelineExecutorJob) -> list[str]:
+        """
+        Returns the list of enabled shot names in MRQ Job
+
+        :param mrq_job: unreal.MoviePipelineExecutorJob instance
+        :type mrq_job: unreal.MoviePipelineExecutorJob
+
+        :return: list of enabled shot
+        :rtype: list[str]
+        """
+
+        shots_to_render = []
+        for shot_index, shot in enumerate(mrq_job.shot_info):
+            if not shot.enabled:
+                unreal.log(
+                    f"Skipped submitting shot {shot_index} in {mrq_job.job_name} "
+                    f"to server due to being already disabled!"
+                )
+            else:
+                shots_to_render.append(shot.outer_name)
+
+        return shots_to_render
 
     def _create_open_job_from_mrq_job(
             self,
@@ -385,15 +410,7 @@ class OpenJobDescription:
         preset_overrides: unreal.DeadlineCloudJobPresetStruct = mrq_job.preset_overrides
         unreal.log(f"Preset overrides: {preset_overrides}")
 
-        shots_to_render = []
-        for shot_index, shot in enumerate(mrq_job.shot_info):
-            if not shot.enabled:
-                unreal.log(
-                    f"Skipped submitting shot {shot_index} in {mrq_job.job_name} "
-                    f"to server due to being already disabled!"
-                )
-            else:
-                shots_to_render.append(shot.outer_name)
+        shots_to_render = OpenJobDescription.get_enabled_shot_names(mrq_job)
 
         try:
             self._steps = JobStepFactory.create_steps(
@@ -464,7 +481,8 @@ class OpenJobDescription:
         # We remove the execcmds because, in some cases, users may execute a script that is local to their editor build
         # for some automated workflow but this is not ideal on the farm.
         # We will expect all custom startup commands for rendering to go through the `Start Command` in the MRQ settings
-        inherited_cmds = re.sub(pattern=".*(?P<cmds>-execcmds=[\s\S]+[\'\"])", repl="", string=inherited_cmds)
+        inherited_cmds = re.sub(pattern='(-execcmds="[^"]*")', repl="", string=inherited_cmds)
+        inherited_cmds = re.sub(pattern="(-execcmds='[^']*')", repl="", string=inherited_cmds)
         cmd_args.extend(inherited_cmds.split(' '))
 
         # Append all of additional command line arguments from the editor
@@ -491,22 +509,16 @@ class OpenJobDescription:
                 out_device_profile_cvars=job_device_profile_cvars,
                 out_exec_cmds=job_exec_cmds,
             )
-            # TODO is that necessary?
-            # Set the game override
-            # if setting.get_class() == unreal.MoviePipelineGameOverrideSetting.static_class():
-            #     game_override_class = setting.game_mode_override
 
         # Apply job cmd arguments
         cmd_args.extend(job_cmd_args)
 
         if job_device_profile_cvars:
-            # -dpcvars="arg0,arg1,..."
             cmd_args.append(
                 '-dpcvars="{}"'.format(",".join(job_device_profile_cvars))
             )
 
         if job_exec_cmds:
-            # -execcmds="cmd0,cmd1,..."
             cmd_args.append(
                 '-execcmds="{}"'.format(",".join(job_exec_cmds))
             )
@@ -517,5 +529,8 @@ class OpenJobDescription:
 
         # remove duplicates
         cmd_args = list(set(cmd_args))
+
+        # remove empty args
+        cmd_args = [a for a in cmd_args if a != '']
 
         return cmd_args

@@ -1,3 +1,4 @@
+#  Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 import math
 import os
 import yaml
@@ -247,7 +248,7 @@ class RenderJobStep(JobStep):
 
     def __init__(
             self, step_template, step_settings, host_requirements, queue_manifest_path, shots_count, task_chunk_size
-     ):
+    ):
         """
         Build JobStep, set its name, fill dependencies list and set queue manifest path parameter
         """
