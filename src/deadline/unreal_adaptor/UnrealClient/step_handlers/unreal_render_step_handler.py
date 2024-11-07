@@ -188,19 +188,19 @@ class UnrealRenderStepHandler(BaseStepHandler):
         render_job.job_name = name
 
     @staticmethod
-    def create_queue_from_queue_asset(movie_pipeline_queue_subsystem, movie_pipeline_queue_asset_path: str):
+    def create_queue_from_queue_asset(
+        movie_pipeline_queue_subsystem, movie_pipeline_queue_asset_path: str
+    ):
         pipeline_queue = movie_pipeline_queue_subsystem.get_queue()
         pipeline_queue.delete_all_jobs()
 
-        movie_pipeline_queue_asset = unreal.EditorAssetLibrary.load_asset(movie_pipeline_queue_asset_path)
+        movie_pipeline_queue_asset = unreal.EditorAssetLibrary.load_asset(
+            movie_pipeline_queue_asset_path
+        )
         pipeline_queue.copy_from(movie_pipeline_queue_asset)
 
     @staticmethod
-    def enable_shots_by_chunk(
-            render_job,
-            task_chunk_size: int,
-            task_chunk_id: int
-    ):
+    def enable_shots_by_chunk(render_job, task_chunk_size: int, task_chunk_id: int):
         all_shots_to_render = [shot for shot in render_job.shot_info if shot.enabled]
         shots_chunk = all_shots_to_render[
             task_chunk_id * task_chunk_size: (task_chunk_id + 1) * task_chunk_size
@@ -240,12 +240,14 @@ class UnrealRenderStepHandler(BaseStepHandler):
                 job_configuration_path=args.get("job_configuration_path", ""),
             )
 
-        if 'chunk_size' in args and 'chunk_id' in args:
+        if "chunk_size" in args and "chunk_id" in args:
+            chunk_size: int = args["chunk_size"]
+            chunk_id: int = args["chunk_id"]
             for job in subsystem.get_queue().get_jobs():
                 UnrealRenderStepHandler.enable_shots_by_chunk(
                     render_job=job,
-                    task_chunk_size=args.get('chunk_size'),
-                    task_chunk_id=args['chunk_id']
+                    task_chunk_size=chunk_size,
+                    task_chunk_id=chunk_id,
                 )
 
         unreal.log(f"Render chunk: {args.get('chunk_id')}")
