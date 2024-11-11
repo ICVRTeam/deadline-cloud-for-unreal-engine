@@ -78,7 +78,7 @@ class UnrealCustomStepHandler(BaseStepHandler):
             unreal.log(traceback.format_exc())
             return False
 
-    def wait_result(self, args: Optional[dict] = None) -> None:
+    def wait_result(self, args: Optional[dict] = None) -> None:  # pragma: no cover
         """
         :param args: A dictionary that contains the arguments for waiting.
         :return: None
