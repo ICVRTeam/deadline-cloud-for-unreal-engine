@@ -67,7 +67,7 @@ class UnrealAdaptor(Adaptor[AdaptorConfiguration]):
 
     @property
     def integration_data_interface_version(self) -> SemanticVersion:
-        return SemanticVersion(major=0, minor=1)
+        return SemanticVersion(major=0, minor=1)  # pragma: no cover
 
     @staticmethod
     def get_timer(timeout: int | float) -> Callable[[], bool]:
@@ -305,11 +305,7 @@ class UnrealAdaptor(Adaptor[AdaptorConfiguration]):
         logger.info(f"execcmds: {execcmds_value}")
 
         # Remove the -execcmds argument from the extra_cmd_args
-        extra_cmd_str = re.sub(
-            r'(-execcmds=["\'][^"\']*["\'])',
-            "",
-            extra_cmd_str
-        )
+        extra_cmd_str = re.sub(r'(-execcmds=["\'][^"\']*["\'])', "", extra_cmd_str)
 
         client_path = self.unreal_client_path.replace("\\", "/")
         log_args = [
@@ -328,13 +324,13 @@ class UnrealAdaptor(Adaptor[AdaptorConfiguration]):
         args.extend(log_args)
         args.extend(extra_cmd_args)
         args = [arg for arg in args if arg]  # Remove empty strings
-        args = list(dict.fromkeys(args))     # Remove duplicates
+        args = list(dict.fromkeys(args))  # Remove duplicates
 
         # Add the execcmds argument back to the args
         if execcmds_value is not None:
-            execcmds_value = f'-execcmds={execcmds_value},py {client_path}'
+            execcmds_value = f"-execcmds={execcmds_value},py {client_path}"
         else:
-            execcmds_value = f'-execcmds=r.HLOD 0,py {client_path}'
+            execcmds_value = f"-execcmds=r.HLOD 0,py {client_path}"
 
         args.append(execcmds_value)
 
@@ -352,7 +348,7 @@ class UnrealAdaptor(Adaptor[AdaptorConfiguration]):
         Populates the adaptor server's action queue with the specific action to check if UE initialized or not yet
         """
 
-        self._action_queue.enqueue_action(Action(name='client_loaded'))
+        self._action_queue.enqueue_action(Action(name="client_loaded"))
 
     def _get_deadline_telemetry_client(self):
         """

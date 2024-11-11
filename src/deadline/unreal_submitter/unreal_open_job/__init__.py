@@ -1,3 +1,5 @@
+#  Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+
 from deadline.unreal_submitter.unreal_open_job.unreal_open_job_entity import UnrealOpenJobEntity
 from deadline.unreal_submitter.unreal_open_job.unreal_open_job import (
     UnrealOpenJob,
