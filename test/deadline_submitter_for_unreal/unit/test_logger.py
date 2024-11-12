@@ -52,7 +52,7 @@ class TestUnrealLogHandler:
 class TestUnrealLogger:
 
     @pytest.mark.parametrize(
-        "unreal_initialized, handler_added, expected_handlers_count",
+        "unreal_initialized, handler_added, add_handler_calls",
         [
             (True, True, 0),
             (False, True, 0),
@@ -60,16 +60,19 @@ class TestUnrealLogger:
             (True, False, 1),
         ],
     )
+    @patch("deadline.unreal_logger.logger.add_unreal_handler")
     def test_get_logger(
-        self, unreal_initialized: bool, handler_added: bool, expected_handlers_count: int
+        self,
+        add_unreal_handler_mock: Mock,
+        unreal_initialized: bool,
+        handler_added: bool,
+        add_handler_calls: int,
     ):
         # GIVEN
-        get_logger().handlers.clear()
-
-        # WHEN
         with patch("deadline.unreal_logger.logger.UNREAL_INITIALIZED", unreal_initialized):
             with patch("deadline.unreal_logger.logger.UNREAL_HANDLER_ADDED", handler_added):
-                logger = get_logger()
+                # WHEN
+                get_logger()
 
         # THEN
-        assert len(logger.handlers) == expected_handlers_count
+        assert add_unreal_handler_mock.call_count == add_handler_calls
