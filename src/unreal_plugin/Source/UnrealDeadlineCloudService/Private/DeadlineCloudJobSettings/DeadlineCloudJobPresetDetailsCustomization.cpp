@@ -260,6 +260,7 @@ void FDeadlineCloudAttachmentDetailsCustomization::CustomizeChildren(
 
 bool FDeadlineCloudJobPresetDetailsCustomization::IsPropertyHiddenInMovieRenderQueue(const FName& InPropertyPath)
 {
+
 	return false;
 }
 
