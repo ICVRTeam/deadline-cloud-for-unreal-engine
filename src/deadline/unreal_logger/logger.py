@@ -2,8 +2,18 @@
 
 import logging
 
-
 from deadline.unreal_logger.handlers import UnrealLogHandler
+
+try:
+    import unreal  # noqa: F401
+
+    UNREAL_INITIALIZED = True
+except ModuleNotFoundError:
+    unreal = None
+    UNREAL_INITIALIZED = False
+
+
+UNREAL_HANDLER_ADDED = False
 
 
 def get_logger() -> logging.Logger:
@@ -14,24 +24,15 @@ def get_logger() -> logging.Logger:
     """
 
     unreal_logger = logging.getLogger("unreal_logger")
-    print(id(unreal_logger))
     unreal_logger.setLevel(logging.DEBUG)
 
-    try:
-        import unreal  # noqa: F401
-    except ModuleNotFoundError:
-        unreal = None
+    global UNREAL_HANDLER_ADDED
 
     # can be called outside UE so need to check before adding UE specific handler
-    if unreal is not None:
+    if not UNREAL_HANDLER_ADDED and UNREAL_INITIALIZED:
         unreal_log_handler = UnrealLogHandler(unreal)
         unreal_log_handler.setLevel(logging.DEBUG)
-
-        # If we found existed UnrealLogHandler, skip adding duplicate
-        existed_unreal_log_handler = next(
-            (h for h in unreal_logger.handlers if isinstance(h, UnrealLogHandler)), None
-        )
-        if not existed_unreal_log_handler:
-            unreal_logger.addHandler(unreal_log_handler)
+        unreal_logger.addHandler(unreal_log_handler)
+        UNREAL_HANDLER_ADDED = True
 
     return unreal_logger
