@@ -12,7 +12,7 @@ from deadline.client.api import (
 )
 from deadline.job_attachments.exceptions import AssetSyncCancelledError
 
-from deadline.unreal_submitter.unreal_logger import get_logger
+from deadline.unreal_logger import get_logger
 from deadline.unreal_submitter.unreal_open_job import UnrealOpenJob, RenderUnrealOpenJob
 
 from ._version import version
