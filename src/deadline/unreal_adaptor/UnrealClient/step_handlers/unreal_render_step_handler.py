@@ -299,7 +299,10 @@ class UnrealRenderStepHandler(BaseStepHandler):
                 if shot.enabled:
                     logger.info(f"Shot to render: {shot.outer_name}: {shot.inner_name}")
 
-        if args.get('output_path') and os.path.exists(args['output_path']):
+        if args.get('output_path'):
+            if not os.path.exists(args['output_path']):
+                os.makedirs(args['output_path'])
+
             new_output_dir = unreal.DirectoryPath()
             new_output_dir.set_editor_property('path', args['output_path'].replace('\\', '/'))
 
