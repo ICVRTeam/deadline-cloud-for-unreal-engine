@@ -218,7 +218,7 @@ class UnrealSubmitter:
         unreal.EditorDialog.show_message(title=title, message=message, message_type=message_type)
 
     @error_notify('Submission failed')
-    def submit_jobs(self):
+    def submit_jobs(self) -> list[str]:
         """
         Submit OpenJobs to the Deadline Cloud
         """

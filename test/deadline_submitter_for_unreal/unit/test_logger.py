@@ -1,5 +1,4 @@
 import pytest
-from types import ModuleType
 from unittest.mock import Mock, MagicMock, patch
 
 from deadline.unreal_logger import get_logger
@@ -52,20 +51,28 @@ class TestUnrealLogHandler:
 
 class TestUnrealLogger:
 
+    @pytest.mark.parametrize(
+        "unreal_initialized, handler_added, add_handler_calls",
+        [
+            (True, True, 0),
+            (False, True, 0),
+            (False, False, 0),
+            (True, False, 1),
+        ],
+    )
+    @patch("deadline.unreal_logger.logger.add_unreal_handler")
     def test_get_logger(
         self,
+        add_unreal_handler_mock: Mock,
+        unreal_initialized: bool,
+        handler_added: bool,
+        add_handler_calls: int,
     ):
         # GIVEN
-        import sys
-
-        current = sys.modules.get("unreal")
-        sys.modules["unreal"] = MagicMock()
-
-        # WHEN
-        logger = get_logger()
+        with patch("deadline.unreal_logger.logger.UNREAL_INITIALIZED", unreal_initialized):
+            with patch("deadline.unreal_logger.logger.UNREAL_HANDLER_ADDED", handler_added):
+                # WHEN
+                get_logger()
 
         # THEN
-        assert len(logger.handlers) == 1
-
-        if isinstance(current, ModuleType):
-            sys.modules["unreal"] = current  # Remove MagicMock from sys.modules
+        assert add_unreal_handler_mock.call_count == add_handler_calls

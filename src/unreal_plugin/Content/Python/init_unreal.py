@@ -30,7 +30,3 @@ if remote_execution != "True":
         ParametersConsistencyChecker
     )
     import remote_executor  # noqa: F401
-
-
-
-
