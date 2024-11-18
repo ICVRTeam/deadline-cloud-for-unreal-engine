@@ -1,5 +1,5 @@
 #  Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
-import os
+
 import unreal
 import threading
 import traceback
@@ -13,7 +13,10 @@ from deadline.client.api import (
 from deadline.job_attachments.exceptions import AssetSyncCancelledError
 
 from deadline.unreal_logger import get_logger
-from deadline.unreal_submitter.unreal_open_job import UnrealOpenJob, RenderUnrealOpenJob
+from deadline.unreal_submitter.unreal_open_job.unreal_open_job import (
+    UnrealOpenJob,
+    RenderUnrealOpenJob,
+)
 
 from ._version import version
 
@@ -22,9 +25,9 @@ logger = get_logger()
 
 
 def error_notify(
-        notify_title: str = 'Operation failed',
-        notify_prefix: str = 'Error occurred:\n',
-        with_traceback: bool = False
+    notify_title: str = "Operation failed",
+    notify_prefix: str = "Error occurred:\n",
+    with_traceback: bool = False,
 ):
     def decorator(func: Callable):
         def wrapper(self, *args, **kwargs):
@@ -36,14 +39,13 @@ def error_notify(
 
                 message = notify_prefix + str(e)
                 if with_traceback:
-                    message += '\n' + traceback.format_exc()
+                    message += "\n" + traceback.format_exc()
                 else:
-                    message += '\nSee logs for more details.'
-                self.show_message_dialog(
-                    message=message,
-                    title=notify_title
-                )
+                    message += "\nSee logs for more details."
+                self.show_message_dialog(message=message, title=notify_title)
+
         return wrapper
+
     return decorator
 
 
@@ -65,8 +67,9 @@ class UnrealSubmitter:
     Execute the OpenJob submission
     """
 
-    def __init__(self, open_job_class: type[UnrealOpenJob] = UnrealOpenJob, silent_mode: bool = False):
-        self._open_job_class = open_job_class
+    open_job_class: type[UnrealOpenJob] = UnrealOpenJob
+
+    def __init__(self, silent_mode: bool = False):
         self._silent_mode = silent_mode
 
         self._jobs: list[UnrealOpenJob] = []
@@ -217,7 +220,7 @@ class UnrealSubmitter:
 
         unreal.EditorDialog.show_message(title=title, message=message, message_type=message_type)
 
-    @error_notify('Submission failed')
+    @error_notify("Submission failed")
     def submit_jobs(self) -> list[str]:
         """
         Submit OpenJobs to the Deadline Cloud
@@ -234,9 +237,7 @@ class UnrealSubmitter:
 
             job_bundle_path = job.create_job_bundle()
 
-            t = threading.Thread(
-                target=self._start_submit, args=(job_bundle_path,), daemon=True
-            )
+            t = threading.Thread(target=self._start_submit, args=(job_bundle_path,), daemon=True)
             t.start()
 
             self._display_progress(
@@ -274,22 +275,17 @@ class UnrealSubmitter:
 
 class UnrealOpenJobSubmitter(UnrealSubmitter):
 
-    def __init__(self, silent_mode: bool = False):
-        super().__init__(UnrealOpenJob, silent_mode)
-
-    @error_notify('Data asset converting failed')
+    @error_notify("Data asset converting failed")
     def add_job(self, unreal_open_job_data_asset: unreal.DeadlineCloudJob):
-        open_job = self._open_job_class.from_data_asset(unreal_open_job_data_asset)
+        open_job = self.open_job_class.from_data_asset(unreal_open_job_data_asset)
         self._jobs.append(open_job)
 
 
 class UnrealRenderOpenJobSubmitter(UnrealSubmitter):
 
-    def __init__(self, silent_mode: bool = False):
-        super().__init__(RenderUnrealOpenJob, silent_mode)
+    open_job_class = RenderUnrealOpenJob
 
-    @error_notify('Data asset converting failed')
+    @error_notify("Data asset converting failed")
     def add_job(self, mrq_job: unreal.MoviePipelineExecutorJob):
-        render_open_job = self._open_job_class.from_data_asset(mrq_job.job_preset)
-        render_open_job.mrq_job = mrq_job
+        render_open_job = self.open_job_class.from_mrq_job(mrq_job)
         self._jobs.append(render_open_job)
