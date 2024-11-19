@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import Mock, MagicMock, patch
 
 from deadline.unreal_logger import get_logger
+from deadline.unreal_logger.logger import add_unreal_handler
 from deadline.unreal_logger.handlers import UnrealLogHandler
 
 
@@ -76,3 +77,15 @@ class TestUnrealLogger:
 
         # THEN
         assert add_unreal_handler_mock.call_count == add_handler_calls
+
+    def test_add_unreal_handler(self):
+        # GIVEN
+        logger = get_logger()
+        logger.handlers.clear()
+
+        # WHEN
+        add_unreal_handler(logger)
+
+        # THEN
+        assert len(logger.handlers) == 1
+        assert isinstance(logger.handlers[0], UnrealLogHandler)
