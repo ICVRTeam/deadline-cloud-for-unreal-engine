@@ -46,9 +46,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DeadlineCloud")
 	FDeadlineCloudJobParametersArray GetParameterDefinitionWithOverrides() const;
 
-	//UFUNCTION(BlueprintCallable, Category = "DeadlineCloud")
-	//FDeadlineCloudStepParametersArray  GetStepParametersWithOverrides() const;
-
 #if WITH_EDITOR
 	void UpdateAttachmentFields();
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;

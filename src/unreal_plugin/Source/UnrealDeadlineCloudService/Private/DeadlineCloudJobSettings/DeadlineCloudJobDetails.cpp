@@ -354,7 +354,7 @@ void FDeadlineCloudJobParametersArrayBuilder::OnGenerateEntry(TSharedRef<IProper
     uint8 TypeValue;
     TypeHandle->GetValue(TypeValue);
 
-    EValueType Type = (EValueType)TypeValue;
+    auto Type = (EValueType)TypeValue;
 
 
     const TSharedPtr<IPropertyHandle> NameHandle = ElementProperty->GetChildHandle("Name", false);
@@ -475,11 +475,6 @@ void FDeadlineCloudJobParametersArrayCustomization::CustomizeChildren(TSharedRef
 {
     
         ArrayBuilder->MrqJob = GetMrqJob(InPropertyHandle);
-        if(ArrayBuilder->MrqJob)
-        {
-
-        }
-
         InChildBuilder.AddCustomBuilder(ArrayBuilder.ToSharedRef());
 }
 #undef LOCTEXT_NAMESPACE
