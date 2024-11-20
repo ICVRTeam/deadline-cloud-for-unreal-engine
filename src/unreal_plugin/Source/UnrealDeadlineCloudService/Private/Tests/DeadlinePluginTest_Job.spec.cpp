@@ -22,12 +22,12 @@
 BEGIN_DEFINE_SPEC(FDeadlinePluginJobSpec, "Deadline",
     EAutomationTestFlags::ProductFilter | EAutomationTestFlags::EditorContext);
 
-TObjectPtr<UDeadlineCloudJob> CreatedJobDataAsset;
+UDeadlineCloudJob* CreatedJobDataAsset;
 FParametersConsistencyCheckResult result;
 
 
 FString PathToJobTemplate;
-FString DefaultTemplate = "/Content/Python/openjd_templates/job_template.yml";
+FString DefaultTemplate = "/Source/UnrealDeadlineCloudService/Private/Tests/openjd_templates/render_job.yml";
 FString ChangedTemplate = "/Test/";
 
 

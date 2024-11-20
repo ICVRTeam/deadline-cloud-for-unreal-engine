@@ -45,8 +45,6 @@ public:
     FDeadlineCloudJobParametersArrayBuilder(
         TSharedRef<IPropertyHandle> InPropertyHandle);
 
-    virtual void GenerateHeaderRowContent(FDetailWidgetRow& NodeRow) override;
-
     void GenerateWrapperStructHeaderRowContent(FDetailWidgetRow& NodeRow, TSharedRef<SWidget> NameContent);
 
     FUIAction EmptyCopyPasteAction;
@@ -76,7 +74,7 @@ public:
         return MakeShared<FDeadlineCloudJobParametersArrayCustomization>();
     }
 
-    FDeadlineCloudJobParametersArrayCustomization() {}
+    FDeadlineCloudJobParametersArrayCustomization() = default;
 
     /** Begin IPropertyTypeCustomization interface */
     virtual void CustomizeHeader(

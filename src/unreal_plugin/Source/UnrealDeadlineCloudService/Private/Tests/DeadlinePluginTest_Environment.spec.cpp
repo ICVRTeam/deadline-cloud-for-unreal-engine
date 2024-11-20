@@ -23,12 +23,12 @@ BEGIN_DEFINE_SPEC(FDeadlinePluginEnvironmentSpec, "Deadline",
     EAutomationTestFlags::ProductFilter | EAutomationTestFlags::EditorContext);
 
 
-TObjectPtr<UDeadlineCloudEnvironment> CreatedEnvironmentDataAsset;
+UDeadlineCloudEnvironment* CreatedEnvironmentDataAsset;
 FParametersConsistencyCheckResult result;
 
 
 FString PathToEnvironmentTemplate;
-FString DefaultTemplate = "/Content/Python/openjd_templates/launch_ue_environment_template.yml";
+FString DefaultTemplate = "/Source/UnrealDeadlineCloudService/Private/Tests/openjd_templates/launch_ue_environment.yml";
 FString ChangedTemplate = "/Test/";
 
 
@@ -52,6 +52,7 @@ void FDeadlinePluginEnvironmentSpec::Define()
 
                         CreatedEnvironmentDataAsset = NewObject<UDeadlineCloudEnvironment>();
                         CreatedEnvironmentDataAsset->PathToTemplate.FilePath = PathToEnvironmentTemplate;
+
 
                     }
                 });
@@ -166,20 +167,23 @@ void FDeadlinePluginEnvironmentSpec::Define()
 
             It("Fix DeadlineCloudEnvironment consistency", [this]()
                 {
-                    CreatedEnvironmentDataAsset->Variables.Variables.Empty();
-                    result = CreatedEnvironmentDataAsset->CheckEnvironmentVariablesConsistency(CreatedEnvironmentDataAsset);
-                    if (result.Passed == false) {
-
-                        CreatedEnvironmentDataAsset->FixEnvironmentVariablesConsistency(CreatedEnvironmentDataAsset);
-                        result = CreatedEnvironmentDataAsset->CheckEnvironmentVariablesConsistency(CreatedEnvironmentDataAsset);
-                        if (result.Passed == true)
-                        {
-                            TestTrue("Parameters consistency fixed", true);
-                        }
-                    }
-                    else
+                    if (CreatedEnvironmentDataAsset)
                     {
-                        TestFalse(result.Reason, (result.Passed == false));
+                        CreatedEnvironmentDataAsset->Variables.Variables.Empty();
+                        result = CreatedEnvironmentDataAsset->CheckEnvironmentVariablesConsistency(CreatedEnvironmentDataAsset);
+                        if (result.Passed == false) {
+
+                            CreatedEnvironmentDataAsset->FixEnvironmentVariablesConsistency(CreatedEnvironmentDataAsset);
+                            result = CreatedEnvironmentDataAsset->CheckEnvironmentVariablesConsistency(CreatedEnvironmentDataAsset);
+                            if (result.Passed == true)
+                            {
+                                TestTrue("Parameters consistency fixed", true);
+                            }
+                        }
+                        else
+                        {
+                            TestFalse(result.Reason, (result.Passed == false));
+                        }
                     }
                 });
         });
