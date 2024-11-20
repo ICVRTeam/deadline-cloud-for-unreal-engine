@@ -455,7 +455,7 @@ void FDeadlineCloudStepParameterListCustomization::CustomizeHeader(TSharedRef<IP
 	uint8 TypeValue;
 	TypeHandle->GetValue(TypeValue);
 
-	EValueType Type = (EValueType)TypeValue;
+	auto Type = (EValueType)TypeValue;
 
 	ArrayBuilder = FDeadlineCloudStepParameterListBuilder::MakeInstance(ArrayHandle.ToSharedRef(), Type);
 
