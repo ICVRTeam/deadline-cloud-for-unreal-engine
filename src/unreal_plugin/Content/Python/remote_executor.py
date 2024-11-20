@@ -2,7 +2,7 @@
 import unreal
 
 from deadline.unreal_logger import get_logger
-from deadline.unreal_submitter.submitter import UnrealRenderOpenJobSubmitter
+from deadline.unreal_submitter.submitter import UnrealMrqJobSubmitter
 
 
 logger = get_logger()
@@ -31,7 +31,7 @@ class MoviePipelineDeadlineCloudRemoteExecutor(unreal.MoviePipelineExecutorBase)
 
         self.pipeline_queue = pipeline_queue
 
-        unreal_submitter = UnrealRenderOpenJobSubmitter()
+        unreal_submitter = UnrealMrqJobSubmitter()
 
         for job in self.pipeline_queue.get_jobs():
             logger.info(f"Submitting Job `{job.job_name}` to Deadline Cloud...")
