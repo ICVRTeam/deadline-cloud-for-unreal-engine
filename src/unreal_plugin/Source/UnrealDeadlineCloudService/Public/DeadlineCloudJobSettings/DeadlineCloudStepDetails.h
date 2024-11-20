@@ -55,7 +55,7 @@ public:
 
 	bool IsEnabled(TSharedRef<IPropertyHandle> InPropertyHandle) const;
 
-	FDeadlineCloudStepParametersArrayCustomization() {}
+	FDeadlineCloudStepParametersArrayCustomization() = default;
 	
 	/** Begin IPropertyTypeCustomization interface */
 	virtual void CustomizeHeader(
@@ -110,7 +110,7 @@ public:
 		return MakeShared<FDeadlineCloudStepParameterListCustomization>();
 	}
 
-	FDeadlineCloudStepParameterListCustomization() {}
+	FDeadlineCloudStepParameterListCustomization() = default;
 	
 	/** Begin IPropertyTypeCustomization interface */
 	virtual void CustomizeHeader(

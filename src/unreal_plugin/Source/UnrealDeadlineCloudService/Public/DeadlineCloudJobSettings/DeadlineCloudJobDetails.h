@@ -76,7 +76,7 @@ public:
         return MakeShared<FDeadlineCloudJobParametersArrayCustomization>();
     }
 
-    FDeadlineCloudJobParametersArrayCustomization() {}
+    FDeadlineCloudJobParametersArrayCustomization() = default;
 
     /** Begin IPropertyTypeCustomization interface */
     virtual void CustomizeHeader(
