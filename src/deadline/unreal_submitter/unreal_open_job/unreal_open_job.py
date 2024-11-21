@@ -61,6 +61,7 @@ class UnrealOpenJobParameterDefinition:
         if u_param.value:
             python_class = PARAMETER_DEFINITION_MAPPING[u_param.type.name].python_class
             build_kwargs["value"] = python_class(u_param.value)
+        logger.info(build_kwargs)
         return cls(**build_kwargs)
 
     @classmethod
@@ -341,12 +342,11 @@ class RenderUnrealOpenJob(UnrealOpenJob):
                     step.update_extra_parameter(
                         UnrealOpenJobStepParameterDefinition.from_unreal_param_definition(parameter)
                     )
-
-        self._extra_parameters = [
-            UnrealOpenJobParameterDefinition.from_unreal_param_definition(p)
-            for p in self._mrq_job.parameter_definition_overrides.parameters
-        ]
-
+        if self._mrq_job.parameter_definition_overrides.parameters:
+            self._extra_parameters = [
+                UnrealOpenJobParameterDefinition.from_unreal_param_definition(p)
+                for p in self._mrq_job.parameter_definition_overrides.parameters
+            ]
         self.job_shared_settings = self._mrq_job.preset_overrides.job_shared_settings
 
         # Job name set order:
