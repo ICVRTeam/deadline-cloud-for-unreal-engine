@@ -22,7 +22,7 @@ def get_project_file_path() -> str:
         )
         return project_file_path
     else:
-        raise RuntimeError("Failed to get a project name. Please set a project!")
+        raise ValueError("Failed to get a project name. Please set a project!")
 
 
 def get_project_directory() -> str:
@@ -79,20 +79,24 @@ def os_path_from_unreal_path(unreal_path, with_ext: bool = False):
     :rtype: str
     """
 
-    os_path = str(unreal_path).replace('/Game/', content_dir)
+    os_path = str(unreal_path).replace("/Game/", content_dir)
 
     if with_ext:
         asset_data = unreal.EditorAssetLibrary.find_asset_data(unreal_path)
-        asset_class_name = asset_data.asset_class_path.asset_name \
-            if hasattr(asset_data, 'asset_class_path') \
-            else asset_data.asset_class  # support older version of UE python API
+        asset_class_name = (
+            asset_data.asset_class_path.asset_name
+            if hasattr(asset_data, "asset_class_path")
+            else asset_data.asset_class
+        )  # support older version of UE python API
 
-        if not asset_class_name.is_none():  # AssetData not found - asset not in the project / on disk
-            os_path += '.umap' if asset_class_name == 'World' else '.uasset'
+        if (
+            not asset_class_name.is_none()
+        ):  # AssetData not found - asset not in the project / on disk
+            os_path += ".umap" if asset_class_name == "World" else ".uasset"
         else:
-            os_path += '.uasset'
+            os_path += ".uasset"
     else:
-        os_path += '.*'
+        os_path += ".*"
 
     return os_path
 
@@ -100,7 +104,7 @@ def os_path_from_unreal_path(unreal_path, with_ext: bool = False):
 def os_abs_from_relative(os_path):
     if os.path.isabs(os_path):
         return str(os_path)
-    return get_project_directory() + '/' + os_path
+    return get_project_directory() + "/" + os_path
 
 
 class PathContext(dict):
@@ -114,11 +118,10 @@ class PathContext(dict):
 
     def __missing__(self, key):
         # if requested key is missed return string "{key}"
-        return key.join('{}')
+        return key.join("{}")
 
 
-# TODO typehint
-def get_path_context_from_mrq_job(mrq_job) -> PathContext:
+def get_path_context_from_mrq_job(mrq_job: unreal.MoviePipelineExecutorJob) -> PathContext:
     """
     Get build context from the given unreal.ConductorMoviePipelineExecutorJob
 
@@ -133,28 +136,30 @@ def get_path_context_from_mrq_job(mrq_job) -> PathContext:
     map_path = os.path.splitext(soft_obj_path_to_str(mrq_job.map))[0]
     map_name = level_sequence_path.split("/")[-1]
 
-    output_settings = mrq_job.get_configuration().find_setting_by_class(unreal.MoviePipelineOutputSetting)
+    output_settings = mrq_job.get_configuration().find_setting_by_class(
+        unreal.MoviePipelineOutputSetting
+    )
 
     path_context = PathContext(
         {
-            'project_path': get_project_file_path(),
-            'project_dir': get_project_directory(),
-            'job_name': mrq_job.job_name,
-            'level_sequence': level_sequence_path,
-            'level_sequence_name': level_sequence_name,
-            'sequence_name': level_sequence_name,
-            'map_path': map_path,
-            'map_name': map_name,
-            'level_name': map_name,
-            'resolution': f'{output_settings.output_resolution.x}x{output_settings.output_resolution.y}',
+            "project_path": get_project_file_path(),
+            "project_dir": get_project_directory(),
+            "job_name": mrq_job.job_name,
+            "level_sequence": level_sequence_path,
+            "level_sequence_name": level_sequence_name,
+            "sequence_name": level_sequence_name,
+            "map_path": map_path,
+            "map_name": map_name,
+            "level_name": map_name,
+            "resolution": f"{output_settings.output_resolution.x}x{output_settings.output_resolution.y}",
         }
     )
     path_context.update(
         {
-            'output_dir': output_settings.output_directory.path.format_map(path_context).replace(
-                "\\", "/"
-            ).rstrip("/"),
-            'filename_format': output_settings.file_name_format.format_map(path_context)
+            "output_dir": output_settings.output_directory.path.format_map(path_context)
+            .replace("\\", "/")
+            .rstrip("/"),
+            "filename_format": output_settings.file_name_format.format_map(path_context),
         }
     )
 

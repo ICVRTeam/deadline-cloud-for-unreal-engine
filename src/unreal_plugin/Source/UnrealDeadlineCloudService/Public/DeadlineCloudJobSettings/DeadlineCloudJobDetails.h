@@ -45,8 +45,6 @@ public:
     FDeadlineCloudJobParametersArrayBuilder(
         TSharedRef<IPropertyHandle> InPropertyHandle);
 
-    virtual void GenerateHeaderRowContent(FDetailWidgetRow& NodeRow) override;
-
     void GenerateWrapperStructHeaderRowContent(FDetailWidgetRow& NodeRow, TSharedRef<SWidget> NameContent);
 
    void OnEyeHideWidgetButtonClicked(FName NameWidget) const;
@@ -82,7 +80,7 @@ public:
         return MakeShared<FDeadlineCloudJobParametersArrayCustomization>();
     }
 
-    FDeadlineCloudJobParametersArrayCustomization() {}
+    FDeadlineCloudJobParametersArrayCustomization() = default;
 
     /** Begin IPropertyTypeCustomization interface */
     virtual void CustomizeHeader(
@@ -97,7 +95,6 @@ public:
     /** End IPropertyTypeCustomization interface */
 
 private:
-    /*static UDeadlineCloudStep* GetOuterJob(TSharedRef<IPropertyHandle> Handle);*/
     static UMoviePipelineDeadlineCloudExecutorJob* GetMrqJob(TSharedRef<IPropertyHandle> Handle);
     static UDeadlineCloudJob* GetJob(TSharedRef<IPropertyHandle> Handle);
 
