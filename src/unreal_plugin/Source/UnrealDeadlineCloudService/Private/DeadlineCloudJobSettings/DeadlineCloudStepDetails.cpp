@@ -15,6 +15,9 @@
 #include "Widgets/Input/SNumericEntryBox.h"
 #include "PythonAPILibraries/PythonParametersConsistencyChecker.h"
 #include "DeadlineCloudJobSettings/DeadlineCloudDetailsWidgetsHelper.h"
+#include "MovieRenderPipeline/MoviePipelineDeadlineCloudExecutorJob.h"
+#include "DeadlineCloudJobSettings/DeadlineCloudJobPresetDetailsCustomization.h"
+
 
 #define LOCTEXT_NAMESPACE "StepDetails"
 
@@ -29,7 +32,7 @@ bool FDeadlineCloudStepDetails::CheckConsistency(UDeadlineCloudStep* Step)
 	return result.Passed;
 }
 
-void FDeadlineCloudStepDetails::OnButtonClicked()
+void FDeadlineCloudStepDetails::OnConsistencyButtonClicked()
 {
 	Settings->FixStepParametersConsistency(Settings.Get());
 	UE_LOG(LogTemp, Warning, TEXT("FixStepParametersConsistency"));
@@ -109,7 +112,7 @@ void FDeadlineCloudStepDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBui
 		.WholeRowContent()
 		[
 			SAssignNew(ConsistencyUpdateWidget, FDeadlineCloudDetailsWidgetsHelper::SConsistencyWidget)
-				.OnFixButtonClicked(FSimpleDelegate::CreateSP(this, &FDeadlineCloudStepDetails::OnButtonClicked))
+				.OnFixButtonClicked(FSimpleDelegate::CreateSP(this, &FDeadlineCloudStepDetails::OnConsistencyButtonClicked))
 		];
 
     if (Settings.IsValid() && (MyDetailLayout != nullptr))
@@ -154,6 +157,7 @@ void FDeadlineCloudStepParametersArrayCustomization::CustomizeHeader(TSharedRef<
 {
 	const TSharedPtr<IPropertyHandle> ArrayHandle = InPropertyHandle->GetChildHandle("Parameters", false);
 	ArrayBuilder = FDeadlineCloudStepParametersArrayBuilder::MakeInstance(ArrayHandle.ToSharedRef());
+	ArrayBuilder->MrqJob = ArrayBuilder->GetMrqJob(InPropertyHandle);
 
 	auto OuterStep = FDeadlineCloudStepParametersArrayBuilder::GetOuterStep(InPropertyHandle);
 	if (IsValid(OuterStep))
@@ -271,6 +275,25 @@ void FDeadlineCloudStepParametersArrayBuilder::ResetToDefaultHandler(TSharedPtr<
 	OuterStep->ResetParameterArray(InParameterName);
 }
 
+UMoviePipelineDeadlineCloudExecutorJob* FDeadlineCloudStepParametersArrayBuilder::GetMrqJob(TSharedRef<IPropertyHandle> Handle)
+{
+	TArray<UObject*> OuterObjects;
+	Handle->GetOuterObjects(OuterObjects);
+
+	if (OuterObjects.Num() == 0)
+	{
+		return nullptr;
+	}
+
+	const TWeakObjectPtr<UObject> OuterObject = OuterObjects[0];
+	if (!OuterObject.IsValid())
+	{
+		return nullptr;
+	}
+	UMoviePipelineDeadlineCloudExecutorJob* MrqJob = Cast<UMoviePipelineDeadlineCloudExecutorJob>(OuterObject);
+	return MrqJob;
+}
+
 void FDeadlineCloudStepParametersArrayBuilder::OnGenerateEntry(TSharedRef<IPropertyHandle> ElementProperty, int32 ElementIndex, IDetailChildrenBuilder& ChildrenBuilder) const
 {
 	IDetailPropertyRow& PropertyRow = ChildrenBuilder.AddProperty(ElementProperty);
@@ -282,16 +305,16 @@ void FDeadlineCloudStepParametersArrayBuilder::OnGenerateEntry(TSharedRef<IPrope
 		return;
 	}
 
-    FString ParameterName;
+	FString ParameterName;
 	NameHandle->GetValue(ParameterName);
 
 	auto OuterStep = FDeadlineCloudStepParametersArrayBuilder::GetOuterStep(ElementProperty);
 	if (IsValid(OuterStep))
 	{
-        const FResetToDefaultOverride ResetDefaultOverride = FResetToDefaultOverride::Create(
+		const FResetToDefaultOverride ResetDefaultOverride = FResetToDefaultOverride::Create(
 			FIsResetToDefaultVisible::CreateSP(this, &FDeadlineCloudStepParametersArrayBuilder::IsResetToDefaultVisible, ParameterName),
-            FResetToDefaultHandler::CreateSP(this, &FDeadlineCloudStepParametersArrayBuilder::ResetToDefaultHandler, ParameterName)
-        );
+			FResetToDefaultHandler::CreateSP(this, &FDeadlineCloudStepParametersArrayBuilder::ResetToDefaultHandler, ParameterName)
+		);
 		PropertyRow.OverrideResetToDefault(ResetDefaultOverride);
 	}
 	else
@@ -306,38 +329,54 @@ void FDeadlineCloudStepParametersArrayBuilder::OnGenerateEntry(TSharedRef<IPrope
 	TSharedPtr<SWidget> NameWidget;
 	TSharedPtr<SWidget> ValueWidget;
 
-	PropertyRow.GetDefaultWidgets( NameWidget, ValueWidget);
+	PropertyRow.GetDefaultWidgets(NameWidget, ValueWidget);
 
 	PropertyRow.CustomWidget(true)
-	.CopyAction(EmptyCopyPasteAction)
-	.PasteAction(EmptyCopyPasteAction)
-	.NameContent()
-	.HAlign(HAlign_Fill)
-	[
-        SNew(SHorizontalBox)
-            + SHorizontalBox::Slot()
-		    .Padding( FMargin( 0.0f, 1.0f, 0.0f, 1.0f) )
-		    .FillWidth(1)
-            [
-                SNew(STextBlock)
-                    .Text(FText::FromString(ParameterName))
-				    .Font(IDetailLayoutBuilder::GetDetailFont())
-                    .ColorAndOpacity(FSlateColor::UseForeground())
-            ]	
-	]
-	.ValueContent()
-	.HAlign(HAlign_Fill)
-	[
-		ValueWidget.ToSharedRef()
-	];
+		.CopyAction(EmptyCopyPasteAction)
+		.PasteAction(EmptyCopyPasteAction)
+		.NameContent()
+		.HAlign(HAlign_Fill)
+		[
+			SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.Padding(FMargin(0.0f, 1.0f, 0.0f, 1.0f))
+				.FillWidth(1)
+				[
+					SNew(STextBlock)
+						.Text(FText::FromString(ParameterName))
+						.Font(IDetailLayoutBuilder::GetDetailFont())
+						.ColorAndOpacity(FSlateColor::UseForeground())
+				]
+		]
+		.ValueContent()
+		.HAlign(HAlign_Fill)
+		[
+			ValueWidget.ToSharedRef()
+		];
 	ValueWidget.ToSharedRef()->SetEnabled(
-		TAttribute<bool>::CreateLambda([this]()
+		TAttribute<bool>::CreateLambda([this, ParameterName]()
+			{
+				if (OnIsEnabled.IsBound())
+					return OnIsEnabled.Execute();
+				return true;
+			})
+	);
+
+	PropertyRow.IsEnabled(TAttribute<bool>::CreateLambda([this, ParameterName]() -> bool
 		{
+			//hide|show properties only if MRQ
+
 			if (OnIsEnabled.IsBound())
 				return OnIsEnabled.Execute();
-			return true;
-		})
-	);
+			if (MrqJob && !(PropertiesToShow.Contains(FName(*ParameterName))))
+			{
+				return false;
+			}
+			else
+			{
+				return true;
+			}
+		}));
 }
 
 TSharedRef<FDeadlineCloudStepParameterListBuilder> FDeadlineCloudStepParameterListBuilder::MakeInstance(TSharedRef<IPropertyHandle> InPropertyHandle, EValueType Type)
@@ -393,7 +432,8 @@ void FDeadlineCloudStepParameterListBuilder::GenerateWrapperStructHeaderRowConte
 
 void FDeadlineCloudStepParameterListBuilder::OnGenerateEntry(TSharedRef<IPropertyHandle> ElementProperty, int32 ElementIndex, IDetailChildrenBuilder& ChildrenBuilder) const
 {
-    IDetailPropertyRow& PropertyRow = ChildrenBuilder.AddProperty(ElementProperty);
+
+	IDetailPropertyRow& PropertyRow = ChildrenBuilder.AddProperty(ElementProperty);
 
 	// Hide the reset to default button since it provides little value
 	const FResetToDefaultOverride ResetDefaultOverride =
@@ -401,11 +441,13 @@ void FDeadlineCloudStepParameterListBuilder::OnGenerateEntry(TSharedRef<IPropert
 
 	PropertyRow.OverrideResetToDefault(ResetDefaultOverride);
 	PropertyRow.ShowPropertyButtons(true);
+	//PropertyRow.ShowPropertyButtons(false);
 
 	TSharedPtr<SWidget> NameWidget;
 	TSharedPtr<SWidget> ValueWidget;
 
-	PropertyRow.GetDefaultWidgets( NameWidget, ValueWidget);
+
+	PropertyRow.GetDefaultWidgets(NameWidget, ValueWidget);
 
 	PropertyRow.CustomWidget(true)
 		.CopyAction(EmptyCopyPasteAction)
@@ -418,17 +460,17 @@ void FDeadlineCloudStepParameterListBuilder::OnGenerateEntry(TSharedRef<IPropert
 		.ValueContent()
 		.HAlign(HAlign_Fill)
 		.VAlign(VAlign_Center)
-		[	
+		[
 			FDeadlineCloudDetailsWidgetsHelper::CreatePropertyWidgetByType(ElementProperty, Type)
 		];
 
 	ValueWidget.ToSharedRef()->SetEnabled(
 		TAttribute<bool>::CreateLambda([this]()
-		{
-			if (OnIsEnabled.IsBound())
-				return OnIsEnabled.Execute();
-			return true;
-		})
+			{
+				if (OnIsEnabled.IsBound())
+					return OnIsEnabled.Execute();
+				return true;
+			})
 	);
 }
 
