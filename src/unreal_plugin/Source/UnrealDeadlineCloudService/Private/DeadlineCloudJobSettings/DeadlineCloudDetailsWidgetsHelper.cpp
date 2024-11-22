@@ -211,6 +211,7 @@ TSharedRef<SWidget> FDeadlineCloudDetailsWidgetsHelper::CreatePropertyWidgetByTy
 {
 	switch (Type)
 	{
+		using enum EValueType;
 	case EValueType::STRING:
 	{
 		return CreateStringWidget(ParameterHandle);
