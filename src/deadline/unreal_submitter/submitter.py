@@ -21,6 +21,15 @@ from deadline.unreal_submitter.unreal_open_job.unreal_open_job import (
 from ._version import version
 
 
+telemetry_client = get_deadline_cloud_library_telemetry_client()  # Initialize telemetry client, opt-out is respected
+telemetry_client.update_common_details(
+    {
+        'deadline-cloud-for-unreal-engine-submitter-version': version,
+        'unreal-engine-version': unreal.SystemLibrary.get_engine_version()  # 5.4.3-34507850+++UE5+Release-5.4
+    }
+)
+
+
 logger = get_logger()
 
 
@@ -36,6 +45,12 @@ def error_notify(
             except Exception as e:
                 unreal.log(str(e))
                 unreal.log(traceback.format_exc())
+
+                telemetry_client.record_error(
+                    event_details={"exception_scope": "on_submit"},
+                    exception_type=str(e),
+                    from_gui=True
+                )
 
                 message = notify_prefix + str(e)
                 if with_traceback:
@@ -80,14 +95,6 @@ class UnrealSubmitter:
         self.continue_submission = True  # affect all not submitted jobs
         self.submitted_job_ids: list[str] = []  # use after submit loop is ended
         self._submission_failed_message = ""  # reset after each job in the loop
-
-        # Initialize telemetry client, opt-out is respected
-        get_deadline_cloud_library_telemetry_client().update_common_details(
-            {
-                "deadline-cloud-for-unreal-engine-submitter-version": version,
-                # TODO: record unreal-engine-version
-            }
-        )
 
     @property
     def submission_failed_message(self) -> str:
