@@ -349,7 +349,7 @@ public:
                 TriggerChange();
             }
         }
-    }
+	};
     void AddHiddenParameter(FName Parameter)
     {
         HiddenParametersList.Add(Parameter);
