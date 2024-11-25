@@ -171,7 +171,7 @@ void UMoviePipelineDeadlineCloudExecutorJob::PostEditChangeProperty(FPropertyCha
 			SelectedJobPreset->ParameterDefinition.Parameters;
 
 		this->StepsOverrides = GetStepsToOverride(SelectedJobPreset);
-		this->EnvironmentsVariablesOverrides = GetEnvironmentsToOverride(SelectedJobPreset);
+		this->EnvironmentsOverrides = GetEnvironmentsToOverride(SelectedJobPreset);
 
 		// UpdateAttachmentFields();
 	}
