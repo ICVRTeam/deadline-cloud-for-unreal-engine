@@ -47,7 +47,7 @@ public:
 private:
     void OnGenerateEntry(TSharedRef<IPropertyHandle> ElementProperty, int32 ElementIndex, IDetailChildrenBuilder& ChildrenBuilder) const;
 
-
+    TArray<FName> PropertiesToShow = { "ChunkSize" };
 	TSharedPtr<IPropertyHandleArray> ArrayProperty;
 };
 
