@@ -154,7 +154,7 @@ void FDeadlineCloudJobDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuil
                 .OnFixButtonClicked(FSimpleDelegate::CreateSP(this, &FDeadlineCloudJobDetails::OnConsistencyButtonClicked))
         ];
 
-    /* Dispatcher to Job PostEditChangeProperty */
+    //  Dispatcher handle bind
     if (Settings.IsValid() && (MyDetailLayout != nullptr))
     {
         Settings->OnSomethingChanged = FSimpleDelegate::CreateSP(this, &FDeadlineCloudJobDetails::ForceRefreshDetails);
@@ -328,9 +328,6 @@ FDeadlineCloudJobParametersArrayBuilder::FDeadlineCloudJobParametersArrayBuilder
 {
 }
 
-void FDeadlineCloudJobParametersArrayBuilder::GenerateHeaderRowContent(FDetailWidgetRow& NodeRow)
-{
-}
 
 void FDeadlineCloudJobParametersArrayBuilder::GenerateWrapperStructHeaderRowContent(FDetailWidgetRow& NodeRow, TSharedRef<SWidget> NameContent)
 {
@@ -456,7 +453,7 @@ void FDeadlineCloudJobParametersArrayBuilder::OnGenerateEntry(TSharedRef<IProper
     uint8 TypeValue;
     TypeHandle->GetValue(TypeValue);
 
-    EValueType Type = (EValueType)TypeValue;
+    auto Type = (EValueType)TypeValue;
 
 
     const TSharedPtr<IPropertyHandle> NameHandle = ElementProperty->GetChildHandle("Name", false);

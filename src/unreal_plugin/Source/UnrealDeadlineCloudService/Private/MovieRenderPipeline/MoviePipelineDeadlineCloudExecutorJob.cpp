@@ -78,6 +78,58 @@ void UMoviePipelineDeadlineCloudExecutorJob::GetPresetStructWithOverrides(UStruc
     }
 }
 
+FDeadlineCloudJobPresetStruct UMoviePipelineDeadlineCloudExecutorJob::GetDeadlineJobPresetStructWithOverrides() const
+{
+	// Start with preset properties
+	FDeadlineCloudJobPresetStruct ReturnValue = JobPreset->JobPresetStruct;
+
+	// const UDeadlineCloudDeveloperSettings* Settings = GetDefault<UDeadlineCloudDeveloperSettings>();
+	GetPresetStructWithOverrides(
+		FDeadlineCloudJobSharedSettingsStruct::StaticStruct(),
+		&PresetOverrides.JobSharedSettings,
+		&ReturnValue.JobSharedSettings
+	);
+
+	GetPresetStructWithOverrides(
+		FDeadlineCloudHostRequirementsStruct::StaticStruct(),
+		&PresetOverrides.HostRequirements,
+		&ReturnValue.HostRequirements
+	);
+
+	GetPresetStructWithOverrides(
+		FDeadlineCloudFileAttachmentsStruct::StaticStruct(),
+		&PresetOverrides.JobAttachments.InputFiles,
+		&ReturnValue.JobAttachments.InputFiles
+	);
+
+	GetPresetStructWithOverrides(
+		FDeadlineCloudDirectoryAttachmentsStruct::StaticStruct(),
+		&PresetOverrides.JobAttachments.InputDirectories,
+		&ReturnValue.JobAttachments.InputDirectories
+	);
+
+	GetPresetStructWithOverrides(
+		FDeadlineCloudDirectoryAttachmentsStruct::StaticStruct(),
+		&PresetOverrides.JobAttachments.OutputDirectories,
+		&ReturnValue.JobAttachments.OutputDirectories
+	);
+	return ReturnValue;
+}
+
+
+FDeadlineCloudJobParametersArray UMoviePipelineDeadlineCloudExecutorJob::GetParameterDefinitionWithOverrides() const
+{
+	// Start with preset properties
+	FDeadlineCloudJobParametersArray ReturnValue = JobPreset->ParameterDefinition;
+	GetPresetStructWithOverrides(
+		FDeadlineCloudJobParametersArray::StaticStruct(),
+		&ParameterDefinitionOverrides.Parameters,
+		&ReturnValue.Parameters
+	);
+
+	return ReturnValue;
+
+}
 
 
 void UMoviePipelineDeadlineCloudExecutorJob::UpdateAttachmentFields()
@@ -137,6 +189,27 @@ void UMoviePipelineDeadlineCloudExecutorJob::PostEditChangeProperty(FPropertyCha
 
 void UMoviePipelineDeadlineCloudExecutorJob::CollectDependencies()
 {
+	UE_LOG(LogTemp, Log, TEXT("MoviePipelineDeadlineCloudExecutorJob :: Collecting dependencies"));
+	PresetOverrides.JobAttachments.InputFiles.AutoDetected.Paths.Empty();
+	AsyncTask(ENamedThreads::GameThread, [this]()
+	{
+		auto& DependencyFiles = PresetOverrides.JobAttachments.InputFiles.AutoDetected.Paths;
+		TArray<FString> FilePaths;
+		if (auto Library = UDeadlineCloudJobBundleLibrary::Get())
+		{
+			FilePaths = Library->GetJobDependencies(this);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Error get DeadlineCloudJobBundleLibrary"));
+		}
+		for (auto FilePath : FilePaths)
+		{
+			FFilePath Item;
+			Item.FilePath = FilePath;
+			DependencyFiles.Add(Item); 	
+		}
+	});
     UE_LOG(LogTemp, Log, TEXT("MoviePipelineDeadlineCloudExecutorJob :: Collecting dependencies"));
     PresetOverrides.JobAttachments.InputFiles.AutoDetected.Paths.Empty();
     AsyncTask(ENamedThreads::GameThread, [this]()
@@ -194,17 +267,41 @@ void UMoviePipelineDeadlineCloudExecutorJob::PostEditChangeChainProperty(FProper
 
 TArray<FString> UMoviePipelineDeadlineCloudExecutorJob::GetCpuArchitectures()
 {
-    return UDeadlineCloudJobBundleLibrary::Get()->GetCpuArchitectures();
+	if (auto Library = UDeadlineCloudJobBundleLibrary::Get())
+	{
+		return Library->GetCpuArchitectures();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Error get DeadlineCloudJobBundleLibrary"));
+	}
+	return {};
 }
 
 TArray<FString> UMoviePipelineDeadlineCloudExecutorJob::GetOperatingSystems()
 {
-    return UDeadlineCloudJobBundleLibrary::Get()->GetOperatingSystems();
+	if (auto Library = UDeadlineCloudJobBundleLibrary::Get())
+	{
+		return Library->GetOperatingSystems();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Error get DeadlineCloudJobBundleLibrary"));
+	}
+	return {};
 }
 
 TArray<FString> UMoviePipelineDeadlineCloudExecutorJob::GetJobInitialStateOptions()
 {
-    return UDeadlineCloudJobBundleLibrary::Get()->GetJobInitialStateOptions();
+	if (auto Library = UDeadlineCloudJobBundleLibrary::Get())
+	{
+		return Library->GetJobInitialStateOptions();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Error get DeadlineCloudJobBundleLibrary"));
+	}
+	return {};
 }
 
 UDeadlineCloudRenderJob* UMoviePipelineDeadlineCloudExecutorJob::CreateDefaultJobPresetFromTemplates(UDeadlineCloudRenderJob* Preset)

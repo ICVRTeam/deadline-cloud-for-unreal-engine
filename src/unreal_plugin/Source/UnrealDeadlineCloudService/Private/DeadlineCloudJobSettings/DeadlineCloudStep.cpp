@@ -12,23 +12,43 @@ UDeadlineCloudStep::UDeadlineCloudStep()
 
 void UDeadlineCloudStep::OpenStepFile(const FString& Path)
 {
-    auto StepStruct = UPythonYamlLibrary::Get()->OpenStepFile(Path);
-
-    Name = StepStruct.Name;
-    TaskParameterDefinitions.Parameters = StepStruct.Parameters;
+    if (auto Library = UPythonYamlLibrary::Get())
+    {
+        auto StepStruct = Library->OpenStepFile(Path);
+        Name = StepStruct.Name;
+        TaskParameterDefinitions.Parameters = StepStruct.Parameters;
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Error get PythonYamlLibrary"));
+    }
 }
 
 
 void UDeadlineCloudStep::FixStepParametersConsistency(UDeadlineCloudStep* Step)
 {
-    UPythonParametersConsistencyChecker::Get()->FixStepParametersConsistency(Step);
+    if (auto Library = UPythonParametersConsistencyChecker::Get())
+    {
+        Library->FixStepParametersConsistency(Step);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Error get PythonParametersConsistencyChecker"));
+    }
 }
 
 
 FParametersConsistencyCheckResult UDeadlineCloudStep::CheckStepParametersConsistency(UDeadlineCloudStep* Self)
 {
-    FParametersConsistencyCheckResult result = UPythonParametersConsistencyChecker::Get()->CheckStepParametersConsistency(Self);
-    return result;
+    if (auto Library = UPythonParametersConsistencyChecker::Get())
+    {
+        return Library->CheckStepParametersConsistency(Self);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Error get PythonParametersConsistencyChecker"));
+    }
+    return FParametersConsistencyCheckResult();
 }
 
 TArray<FStepTaskParameterDefinition> UDeadlineCloudStep::GetStepParameters()
@@ -108,7 +128,7 @@ FDeadlineCloudStepOverride UDeadlineCloudStep::GetStepDataToOverride()
     for (int i = 0; i < Environments.Num(); i++)
     {
         Envs.Add({ Environments[i]->GetEnvironmentData() });
-    } 
+    }
 
     StepData.EnvironmentsToOverride = Envs;
     StepData.TaskParameterDefinitions = TaskParameterDefinitions;
@@ -117,8 +137,15 @@ FDeadlineCloudStepOverride UDeadlineCloudStep::GetStepDataToOverride()
 
 bool UDeadlineCloudStep::IsParameterArrayDefault(FString ParameterName)
 {
-    TArray<FStepTaskParameterDefinition> DefaultParameters = UPythonYamlLibrary::Get()->OpenStepFile(PathToTemplate.FilePath).Parameters;
-
+    TArray<FStepTaskParameterDefinition> DefaultParameters;
+    if (auto Library = UPythonYamlLibrary::Get())
+    {
+        DefaultParameters = Library->OpenStepFile(PathToTemplate.FilePath).Parameters;
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Error get PythonYamlLibrary"));
+    }
     for (FStepTaskParameterDefinition& Parameter : TaskParameterDefinitions.Parameters)
     {
         if (Parameter.Name == ParameterName)
@@ -150,7 +177,15 @@ bool UDeadlineCloudStep::IsParameterArrayDefault(FString ParameterName)
 
 void UDeadlineCloudStep::ResetParameterArray(FString ParameterName)
 {
-    TArray<FStepTaskParameterDefinition> DefaultParameters = UPythonYamlLibrary::Get()->OpenStepFile(PathToTemplate.FilePath).Parameters;
+    TArray<FStepTaskParameterDefinition> DefaultParameters;
+    if (auto Library = UPythonYamlLibrary::Get())
+    {
+        DefaultParameters = Library->OpenStepFile(PathToTemplate.FilePath).Parameters;
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Error get PythonYamlLibrary"));
+    }
 
     bool bFound = false;
     for (FStepTaskParameterDefinition& Parameter : TaskParameterDefinitions.Parameters)

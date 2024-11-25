@@ -368,10 +368,11 @@ class RenderUnrealOpenJob(UnrealOpenJob):
                         UnrealOpenJobStepParameterDefinition.from_unreal_param_definition(parameter)
                     )
 
-        self._extra_parameters = [
-            UnrealOpenJobParameterDefinition.from_unreal_param_definition(p)
-            for p in self._mrq_job.parameter_definition_overrides.parameters
-        ]
+        if self._mrq_job.parameter_definition_overrides.parameters:
+            self._extra_parameters = [
+                UnrealOpenJobParameterDefinition.from_unreal_param_definition(p)
+                for p in self._mrq_job.parameter_definition_overrides.parameters
+            ]
 
         self.job_shared_settings = JobSharedSettings.from_u_deadline_cloud_job_shared_settings(
             self._mrq_job.preset_overrides.job_shared_settings

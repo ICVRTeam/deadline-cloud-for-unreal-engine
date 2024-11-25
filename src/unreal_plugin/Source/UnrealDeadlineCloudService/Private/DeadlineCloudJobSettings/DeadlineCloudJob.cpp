@@ -12,25 +12,45 @@ UDeadlineCloudJob::UDeadlineCloudJob()
 
 void UDeadlineCloudJob::OpenJobFile(const FString& Path)
 {
-    ParameterDefinition.Parameters = UPythonYamlLibrary::Get()->OpenJobFile(Path);
+    if (auto Library = UPythonYamlLibrary::Get())
+    {
+        ParameterDefinition.Parameters = Library->OpenJobFile(Path);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Error get PythonYamlLibrary"));
+    }
 }
 
 void UDeadlineCloudJob::ReadName(const FString& Path)
 {
-    Name = UPythonYamlLibrary::Get()->ReadName(Path);
+    if (auto Library = UPythonYamlLibrary::Get())
+    {
+        Name = Library->ReadName(Path);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Error get PythonYamlLibrary"));
+    }
 }
 
 FString UDeadlineCloudJob::GetDefaultParameterValue(const FString& ParameterName)
 {
-    TArray<FParameterDefinition> DefaultParameters = UPythonYamlLibrary::Get()->OpenJobFile(PathToTemplate.FilePath);
-    for (FParameterDefinition& Parameter : DefaultParameters)
+    if (auto Library = UPythonYamlLibrary::Get())
     {
-        if (Parameter.Name == ParameterName)
+        TArray<FParameterDefinition> DefaultParameters = Library->OpenJobFile(PathToTemplate.FilePath);
+        for (FParameterDefinition& Parameter : DefaultParameters)
         {
-            return Parameter.Value;
+            if (Parameter.Name == ParameterName)
+            {
+                return Parameter.Value;
+            }
         }
     }
-
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Error get PythonYamlLibrary"));
+    }
     return "";
 }
 
@@ -57,7 +77,7 @@ void UDeadlineCloudJob::FixConsistencyForHiddenParameters()
     {
         HiddenParametersList.Remove(HiddenName);
     }
-   
+
 }
 
 TArray<FParameterDefinition> UDeadlineCloudJob::GetJobParameters()
@@ -72,7 +92,14 @@ void UDeadlineCloudJob::SetJobParameters(TArray<FParameterDefinition> InParamete
 
 void UDeadlineCloudJob::FixJobParametersConsistency(UDeadlineCloudJob* Job)
 {
-    UPythonParametersConsistencyChecker::Get()->FixJobParametersConsistency(Job);
+    if (auto Library = UPythonParametersConsistencyChecker::Get())
+    {
+        Library->FixJobParametersConsistency(Job);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Error get PythonParametersConsistencyChecker"));
+    }
 }
 
 
@@ -92,20 +119,52 @@ TArray<FStepTaskParameterDefinition> UDeadlineCloudJob::GetAllStepParameters() c
 
 FParametersConsistencyCheckResult UDeadlineCloudJob::CheckJobParametersConsistency(UDeadlineCloudJob* Job)
 {
-    return UPythonParametersConsistencyChecker::Get()->CheckJobParametersConsistency(Job);
+    if (auto Library = UPythonParametersConsistencyChecker::Get())
+    {
+        return Library->CheckJobParametersConsistency(Job);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Error get PythonParametersConsistencyChecker"));
+    }
+    return FParametersConsistencyCheckResult();
 }
 
 TArray<FString> UDeadlineCloudJob::GetCpuArchitectures()
 {
-    return UDeadlineCloudJobBundleLibrary::Get()->GetCpuArchitectures();
+    if (auto Library = UDeadlineCloudJobBundleLibrary::Get())
+    {
+        return Library->GetCpuArchitectures();
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Error get DeadlineCloudJobBundleLibrary"));
+    }
+    return {};
 }
 
 TArray<FString> UDeadlineCloudJob::GetOperatingSystems()
 {
-    return UDeadlineCloudJobBundleLibrary::Get()->GetOperatingSystems();
+    if (auto Library = UDeadlineCloudJobBundleLibrary::Get())
+    {
+        return Library->GetOperatingSystems();
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Error get DeadlineCloudJobBundleLibrary"));
+    }
+    return {};
 }
 
 TArray<FString> UDeadlineCloudJob::GetJobInitialStateOptions()
 {
-    return UDeadlineCloudJobBundleLibrary::Get()->GetJobInitialStateOptions();
+    if (auto Library = UDeadlineCloudJobBundleLibrary::Get())
+    {
+        return Library->GetJobInitialStateOptions();
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Error get DeadlineCloudJobBundleLibrary"));
+    }
+    return {};
 }

@@ -189,7 +189,7 @@ void FDeadlineCloudDetailsWidgetsHelper::SConsistencyWidget::Construct(const FAr
                 [
                     SNew(STextBlock)
                         .Text(FText::FromString("Parameters changed. Update parameters?"))
-                        .ColorAndOpacity(FLinearColor::Yellow) // 
+                        .ColorAndOpacity(FLinearColor::Yellow) //
                 ]
 
                 + SHorizontalBox::Slot()
@@ -223,7 +223,7 @@ void FDeadlineCloudDetailsWidgetsHelper::SEyeUpdateWidget::Construct(const FArgu
                 .Padding(5)
                 [
                     SNew(SButton)
-                        .OnClicked(this, &SEyeUpdateWidget::HandleButtonClicked) 
+                        .OnClicked(this, &SEyeUpdateWidget::HandleButtonClicked)
                         .Text(this, &SEyeUpdateWidget::GetButtonText)
                 ]
         ];
@@ -232,30 +232,31 @@ void FDeadlineCloudDetailsWidgetsHelper::SEyeUpdateWidget::Construct(const FArgu
 
 TSharedRef<SWidget> FDeadlineCloudDetailsWidgetsHelper::CreatePropertyWidgetByType(TSharedPtr<IPropertyHandle> ParameterHandle, EValueType Type)
 {
-    switch (Type)
-    {
-    case EValueType::STRING:
-    {
-        return CreateStringWidget(ParameterHandle);
-    }
-    case EValueType::PATH:
-    {
-        return CreatePathWidget(ParameterHandle);
-    }
-    case EValueType::INT:
-    {
-        return CreateIntWidget(ParameterHandle);
-    }
-    case EValueType::FLOAT:
-    {
-        return CreateFloatWidget(ParameterHandle);
-    }
-    default:
-    {
-        UE_LOG(LogTemp, Error, TEXT("CreatePropertyWidgetByType : Unknown type"));
-        break;
-    }
-    }
+	switch (Type)
+	{
+		using enum EValueType;
+	case EValueType::STRING:
+	{
+		return CreateStringWidget(ParameterHandle);
+	}
+	case EValueType::PATH:
+	{
+		return CreatePathWidget(ParameterHandle);
+	}
+	case EValueType::INT:
+	{
+		return CreateIntWidget(ParameterHandle);
+	}
+	case EValueType::FLOAT:
+	{
+		return CreateFloatWidget(ParameterHandle);
+	}
+	default:
+	{
+		UE_LOG(LogTemp, Error, TEXT("CreatePropertyWidgetByType : Unknown type"));
+		break;
+	}
+	}
 
     return SNullWidget::NullWidget;
 }

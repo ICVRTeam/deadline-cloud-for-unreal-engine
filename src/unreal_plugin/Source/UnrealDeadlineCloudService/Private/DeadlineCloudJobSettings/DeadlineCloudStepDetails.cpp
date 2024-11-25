@@ -172,26 +172,7 @@ void FDeadlineCloudStepParametersArrayCustomization::CustomizeChildren(TSharedRe
 {
     InChildBuilder.AddCustomBuilder(ArrayBuilder.ToSharedRef());
 }
-/*
-UMoviePipelineDeadlineCloudExecutorJob* FDeadlineCloudStepParameterListBuilder::GetMrqJob(TSharedRef<IPropertyHandle> Handle)
-{
-    TArray<UObject*> OuterObjects;
-    Handle->GetOuterObjects(OuterObjects);
 
-    if (OuterObjects.Num() == 0)
-    {
-        return nullptr;
-    }
-
-    const TWeakObjectPtr<UObject> OuterObject = OuterObjects[0];
-    if (!OuterObject.IsValid())
-    {
-        return nullptr;
-    }
-    UMoviePipelineDeadlineCloudExecutorJob* MrqJob = Cast<UMoviePipelineDeadlineCloudExecutorJob>(OuterObject);
-    return MrqJob;
-}
-*/
 UDeadlineCloudStep* FDeadlineCloudStepParametersArrayBuilder::GetOuterStep(TSharedRef<IPropertyHandle> Handle)
 {
     TArray<UObject*> OuterObjects;
@@ -226,10 +207,6 @@ FDeadlineCloudStepParametersArrayBuilder::FDeadlineCloudStepParametersArrayBuild
     ArrayProperty(InPropertyHandle->AsArray())
 {
 
-}
-
-void FDeadlineCloudStepParametersArrayBuilder::GenerateHeaderRowContent(FDetailWidgetRow& NodeRow)
-{
 }
 
 void FDeadlineCloudStepParametersArrayBuilder::GenerateWrapperStructHeaderRowContent(FDetailWidgetRow& NodeRow, TSharedRef<SWidget> NameContent)
@@ -420,10 +397,6 @@ FDeadlineCloudStepParameterListBuilder::FDeadlineCloudStepParameterListBuilder(T
 {
 }
 
-void FDeadlineCloudStepParameterListBuilder::GenerateHeaderRowContent(FDetailWidgetRow& NodeRow)
-{
-}
-
 void FDeadlineCloudStepParameterListBuilder::GenerateWrapperStructHeaderRowContent(FDetailWidgetRow& NodeRow, TSharedRef<SWidget> NameContent)
 {
     FDetailArrayBuilder::GenerateHeaderRowContent(NodeRow);
@@ -533,10 +506,9 @@ void FDeadlineCloudStepParameterListCustomization::CustomizeHeader(TSharedRef<IP
     uint8 TypeValue;
     TypeHandle->GetValue(TypeValue);
 
-    EValueType Type = (EValueType)TypeValue;
+	auto Type = (EValueType)TypeValue;
 
-    ArrayBuilder = FDeadlineCloudStepParameterListBuilder::MakeInstance(ArrayHandle.ToSharedRef(), Type);
-    //ArrayBuilder->MrqJob = ArrayBuilder->GetMrqJob(InPropertyHandle);
+	ArrayBuilder = FDeadlineCloudStepParameterListBuilder::MakeInstance(ArrayHandle.ToSharedRef(), Type);
 
     ArrayBuilder->GenerateWrapperStructHeaderRowContent(InHeaderRow, InPropertyHandle->CreatePropertyNameWidget());
 }
