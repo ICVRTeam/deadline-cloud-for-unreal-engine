@@ -48,6 +48,18 @@ void FDeadlineCloudJobDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuil
     TSharedPtr<FDeadlineCloudDetailsWidgetsHelper::SConsistencyWidget> ConsistencyUpdateWidget;
     FParametersConsistencyCheckResult result;
 
+    TSharedPtr<FDeadlineCloudDetailsWidgetsHelper::SEyeUpdateWidget> HiddenParametersUpdateWidget;
+
+    /* Update all when one Parameters widget is checked as hidden */
+    if (Settings.IsValid())
+    {
+        Settings->OnParameterHidden.BindSP(this, &FDeadlineCloudJobDetails::RespondToEvent);
+    }
+    /* Collapse hidden parameters array  */
+    TSharedRef<IPropertyHandle> HideHandle = MyDetailLayout->GetProperty("HiddenParametersList");
+    IDetailPropertyRow* HideRow = MyDetailLayout->EditDefaultProperty(HideHandle);
+    HideRow->Visibility(EVisibility::Collapsed);
+
     /* Consistency check */
     if (Settings.IsValid() && Settings->GetJobParameters().Num() > 0)
     {
@@ -139,14 +151,31 @@ void FDeadlineCloudJobDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuil
         .WholeRowContent()
         [
             SAssignNew(ConsistencyUpdateWidget, FDeadlineCloudDetailsWidgetsHelper::SConsistencyWidget)
-                .OnFixButtonClicked(FSimpleDelegate::CreateSP(this, &FDeadlineCloudJobDetails::OnButtonClicked))
+                .OnFixButtonClicked(FSimpleDelegate::CreateSP(this, &FDeadlineCloudJobDetails::OnConsistencyButtonClicked))
         ];
 
-    //  Dispatcher handle bind
+    /* Dispatcher to Job PostEditChangeProperty */
     if (Settings.IsValid() && (MyDetailLayout != nullptr))
     {
         Settings->OnSomethingChanged = FSimpleDelegate::CreateSP(this, &FDeadlineCloudJobDetails::ForceRefreshDetails);
     };
+
+
+
+    PropertiesCategory.AddCustomRow(FText::FromString("Visibility"))
+        .Visibility(TAttribute<EVisibility>::Create(TAttribute<EVisibility>::FGetter::CreateSP(this, &FDeadlineCloudJobDetails::GetEyeWidgetVisibility)))
+        .WholeRowContent()
+        [
+            SAssignNew(HiddenParametersUpdateWidget, FDeadlineCloudDetailsWidgetsHelper::SEyeUpdateWidget)
+
+                .OnEyeUpdateButtonClicked(FSimpleDelegate::CreateSP(this, &FDeadlineCloudJobDetails::OnViewAllButtonClicked))
+                .bShowHidden_(Settings->GetDisplayHiddenParameters())
+        ];
+
+}
+void FDeadlineCloudJobDetails::RespondToEvent()
+{
+    ForceRefreshDetails();
 }
 void FDeadlineCloudJobDetails::ForceRefreshDetails()
 {
@@ -166,6 +195,12 @@ EVisibility FDeadlineCloudJobDetails::GetConsistencyWidgetVisibility() const
 {
     return (!bCheckConsistensyPassed) ? EVisibility::Visible : EVisibility::Collapsed;
 }
+
+EVisibility FDeadlineCloudJobDetails::GetEyeWidgetVisibility() const
+{
+    return ((Settings->AreEmptyHiddenParameters())) ? EVisibility::Collapsed : EVisibility::Visible;
+}
+
 
 bool FDeadlineCloudJobDetails::IsStepContainsErrors() const
 {
@@ -202,7 +237,6 @@ bool FDeadlineCloudJobDetails::IsEnvironmentContainsErrors() const
         {
             return true;
         }
-
         ExistingEnvironment.Add(Environment);
     }
 
@@ -219,11 +253,61 @@ EVisibility FDeadlineCloudJobDetails::GetEnvironmentDefaultWidgetVisibility() co
     return IsEnvironmentContainsErrors() ? EVisibility::Collapsed : EVisibility::Visible;
 }
 
-void FDeadlineCloudJobDetails::OnButtonClicked()
+void FDeadlineCloudJobDetails::OnConsistencyButtonClicked()
 {
+    /* Compare hidden parameters after consistency check */
+    if (bCheckConsistensyPassed == false)
+    {
+        /* Remove hidden parameters in TArray missing in .yaml */
+        if (Settings->AreEmptyHiddenParameters() == false)
+        {
+            Settings->FixConsistencyForHiddenParameters();
+        }
+
+    }
     Settings->FixJobParametersConsistency(Settings.Get());
     UE_LOG(LogTemp, Warning, TEXT("FixJobParametersConsistency"));
     ForceRefreshDetails();
+}
+
+void FDeadlineCloudJobDetails::OnViewAllButtonClicked()
+{
+    bool Show = Settings->GetDisplayHiddenParameters();
+    Settings->SetDisplayHiddenParameters(!Show);
+    ForceRefreshDetails();
+}
+
+void FDeadlineCloudJobParametersArrayBuilder::OnEyeHideWidgetButtonClicked(FName Property) const
+{
+
+    if (Job)
+    {
+        if (Job->ContainsHiddenParameters(Property))
+        {
+            Job->RemoveHiddenParameters(Property);
+        }
+        else
+        {
+            Job->AddHiddenParameter(Property);
+        }
+    }
+}
+
+bool FDeadlineCloudJobParametersArrayBuilder::IsPropertyHidden(FName Parameter) const
+{
+    bool Contains = false;
+    if (Job)
+    {
+        Contains = Job->ContainsHiddenParameters(Parameter) && (Job->GetDisplayHiddenParameters() == false);
+    }
+    if (MrqJob)
+    {
+        if (MrqJob->JobPreset)
+        {
+            Contains = MrqJob->JobPreset->ContainsHiddenParameters(Parameter);
+        }
+    }
+    return Contains;
 }
 
 TSharedRef<FDeadlineCloudJobParametersArrayBuilder> FDeadlineCloudJobParametersArrayBuilder::MakeInstance(TSharedRef<IPropertyHandle> InPropertyHandle)
@@ -234,6 +318,7 @@ TSharedRef<FDeadlineCloudJobParametersArrayBuilder> FDeadlineCloudJobParametersA
     Builder->OnGenerateArrayElementWidget(
         FOnGenerateArrayElementWidget::CreateSP(Builder, &FDeadlineCloudJobParametersArrayBuilder::OnGenerateEntry));
     return Builder;
+
 }
 
 FDeadlineCloudJobParametersArrayBuilder::FDeadlineCloudJobParametersArrayBuilder(TSharedRef<IPropertyHandle> InPropertyHandle)
@@ -304,41 +389,58 @@ UDeadlineCloudJob* FDeadlineCloudJobParametersArrayBuilder::GetOuterJob(TSharedR
 
 bool FDeadlineCloudJobParametersArrayBuilder::IsResetToDefaultVisible(TSharedPtr<IPropertyHandle> PropertyHandle, FString InParameterName) const
 {
-	if (!PropertyHandle.IsValid())
-	{
-		return false;
-	}
+    if (!PropertyHandle.IsValid())
+    {
+        return false;
+    }
 
-	auto OuterJob = GetOuterJob(PropertyHandle.ToSharedRef());
+    auto OuterJob = GetOuterJob(PropertyHandle.ToSharedRef());
 
-	if (!IsValid(OuterJob))
-	{
-		return false;
-	}
+    if (!IsValid(OuterJob))
+    {
+        return false;
+    }
 
-	FString DefaultValue = OuterJob->GetDefaultParameterValue(InParameterName);
-	FString CurrentValue;
-	PropertyHandle->GetValue(CurrentValue);
+    FString DefaultValue = OuterJob->GetDefaultParameterValue(InParameterName);
+    FString CurrentValue;
+    PropertyHandle->GetValue(CurrentValue);
 
-	return !CurrentValue.Equals(DefaultValue);
+    return !CurrentValue.Equals(DefaultValue);
 }
 
 void FDeadlineCloudJobParametersArrayBuilder::ResetToDefaultHandler(TSharedPtr<IPropertyHandle> PropertyHandle, FString InParameterName) const
 {
-	if (!PropertyHandle.IsValid())
-	{
-		return;
-	}
+    if (!PropertyHandle.IsValid())
+    {
+        return;
+    }
 
-	auto OuterJob = GetOuterJob(PropertyHandle.ToSharedRef());
+    auto OuterJob = GetOuterJob(PropertyHandle.ToSharedRef());
 
-	if (!IsValid(OuterJob))
-	{
-		return;
-	}
+    if (!IsValid(OuterJob))
+    {
+        return;
+    }
 
-	FString DefaultValue = OuterJob->GetDefaultParameterValue(InParameterName);
-	PropertyHandle->SetValue(DefaultValue);
+    FString DefaultValue = OuterJob->GetDefaultParameterValue(InParameterName);
+    PropertyHandle->SetValue(DefaultValue);
+}
+
+bool FDeadlineCloudJobParametersArrayBuilder::IsEyeWidgetEnabled(FName Parameter) const
+{
+    bool result = false;
+    if (Job)
+    {
+        result = Job->ContainsHiddenParameters(Parameter);
+    }
+    if (MrqJob)
+    {
+        if (MrqJob->JobPreset)
+        {
+            result = MrqJob->JobPreset->ContainsHiddenParameters(Parameter);
+        }
+    }
+    return result;
 }
 
 void FDeadlineCloudJobParametersArrayBuilder::OnGenerateEntry(TSharedRef<IPropertyHandle> ElementProperty, int32 ElementIndex, IDetailChildrenBuilder& ChildrenBuilder) const
@@ -380,10 +482,10 @@ void FDeadlineCloudJobParametersArrayBuilder::OnGenerateEntry(TSharedRef<IProper
     if (IsValid(OuterJob))
     {
         const FResetToDefaultOverride ResetDefaultOverride = FResetToDefaultOverride::Create(
-			FIsResetToDefaultVisible::CreateSP(this, &FDeadlineCloudJobParametersArrayBuilder::IsResetToDefaultVisible, ParameterName),
-			FResetToDefaultHandler::CreateSP(this, &FDeadlineCloudJobParametersArrayBuilder::ResetToDefaultHandler, ParameterName)
-		);
-		PropertyRow.OverrideResetToDefault(ResetDefaultOverride);
+            FIsResetToDefaultVisible::CreateSP(this, &FDeadlineCloudJobParametersArrayBuilder::IsResetToDefaultVisible, ParameterName),
+            FResetToDefaultHandler::CreateSP(this, &FDeadlineCloudJobParametersArrayBuilder::ResetToDefaultHandler, ParameterName)
+        );
+        PropertyRow.OverrideResetToDefault(ResetDefaultOverride);
     }
     else
     {
@@ -399,6 +501,12 @@ void FDeadlineCloudJobParametersArrayBuilder::OnGenerateEntry(TSharedRef<IProper
 
     PropertyRow.GetDefaultWidgets(NameWidget, ValueWidget);
     ValueWidget = FDeadlineCloudDetailsWidgetsHelper::CreatePropertyWidgetByType(ValueHandle, Type);
+
+    bool Checked = !(IsEyeWidgetEnabled(FName(ParameterName)));
+    TSharedRef<FDeadlineCloudDetailsWidgetsHelper::SEyeCheckBox> EyeWidget = SNew(FDeadlineCloudDetailsWidgetsHelper::SEyeCheckBox, FName(ParameterName), Checked);
+
+    EyeWidget->SetOnCheckStateChangedDelegate(FDeadlineCloudDetailsWidgetsHelper::SEyeCheckBox::FOnCheckStateChangedDelegate::CreateSP(this, &FDeadlineCloudJobParametersArrayBuilder::OnEyeHideWidgetButtonClicked));
+    EyeWidget->SetVisibility((MrqJob) ? EVisibility::Hidden : EVisibility::Visible);
 
     PropertyRow.CustomWidget(true)
         .CopyAction(EmptyCopyPasteAction)
@@ -420,27 +528,25 @@ void FDeadlineCloudJobParametersArrayBuilder::OnGenerateEntry(TSharedRef<IProper
         .ValueContent()
         .HAlign(HAlign_Fill)
         [
-            //FDeadlineCloudDetailsWidgetsHelper::CreatePropertyWidgetByType(ValueHandle, Type)
             ValueWidget.ToSharedRef()
+        ]
+        .ExtensionContent()
+        [
+            EyeWidget
         ];
 
-    ValueWidget->SetEnabled(
-        TAttribute<bool>::CreateLambda([this, ParameterName]()
-            {
-                if (OnIsEnabled.IsBound())
-                {
-                        OnIsEnabled.Execute();
-                }
-                if (MrqJob)
-                {
-                    return ParameterName == "ExtraCmdArgs";
-                }
-                else
-                {
-                    return true;
-                }
-            })
+      ValueWidget->SetEnabled(
+          TAttribute<bool>::CreateLambda([this]()
+              {
+                  if (OnIsEnabled.IsBound())
+                      return OnIsEnabled.Execute();
+                  return true;
+              })
     );
+
+    PropertyRow.Visibility(IsPropertyHidden(FName(ParameterName)) ? EVisibility::Collapsed : EVisibility::Visible);
+
+
 
 }
 
@@ -463,6 +569,25 @@ UMoviePipelineDeadlineCloudExecutorJob* FDeadlineCloudJobParametersArrayCustomiz
     return MrqJob;
 }
 
+UDeadlineCloudJob* FDeadlineCloudJobParametersArrayCustomization::GetJob(TSharedRef<IPropertyHandle> Handle)
+{
+    TArray<UObject*> OuterObjects;
+    Handle->GetOuterObjects(OuterObjects);
+
+    if (OuterObjects.Num() == 0)
+    {
+        return nullptr;
+    }
+
+    const TWeakObjectPtr<UObject> OuterObject = OuterObjects[0];
+    if (!OuterObject.IsValid())
+    {
+        return nullptr;
+    }
+    UDeadlineCloudJob* Job = Cast<UDeadlineCloudJob>(OuterObject);
+    return Job;
+}
+
 void FDeadlineCloudJobParametersArrayCustomization::CustomizeHeader(TSharedRef<IPropertyHandle> InPropertyHandle, FDetailWidgetRow& InHeaderRow, IPropertyTypeCustomizationUtils& InCustomizationUtils)
 {
     TSharedPtr<IPropertyHandle> ArrayHandle = InPropertyHandle->GetChildHandle("Parameters", false);
@@ -473,13 +598,11 @@ void FDeadlineCloudJobParametersArrayCustomization::CustomizeHeader(TSharedRef<I
 
 void FDeadlineCloudJobParametersArrayCustomization::CustomizeChildren(TSharedRef<IPropertyHandle> InPropertyHandle, IDetailChildrenBuilder& InChildBuilder, IPropertyTypeCustomizationUtils& InCustomizationUtils)
 {
-    
-        ArrayBuilder->MrqJob = GetMrqJob(InPropertyHandle);
-        if(ArrayBuilder->MrqJob)
-        {
 
-        }
+    ArrayBuilder->MrqJob = GetMrqJob(InPropertyHandle);
+    ArrayBuilder->Job = GetJob(InPropertyHandle);
 
-        InChildBuilder.AddCustomBuilder(ArrayBuilder.ToSharedRef());
+    InChildBuilder.AddCustomBuilder(ArrayBuilder.ToSharedRef());
 }
+
 #undef LOCTEXT_NAMESPACE

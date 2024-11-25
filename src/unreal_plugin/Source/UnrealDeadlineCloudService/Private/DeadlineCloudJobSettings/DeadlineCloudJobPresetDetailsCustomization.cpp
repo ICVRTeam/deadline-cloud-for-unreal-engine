@@ -8,8 +8,10 @@
 #include "PropertyCustomizationHelpers.h"
 #include "Widgets/Input/SCheckBox.h"
 #include "Misc/EngineVersionComparison.h"
-
-class SEyeCheckBox : public SCompoundWidget
+#include "DeadlineCloudJobSettings/DeadlineCloudDetailsWidgetsHelper.h"
+/*
+class 
+: public SCompoundWidget
 {
 public:
 	SLATE_BEGIN_ARGS( SEyeCheckBox ){}
@@ -44,18 +46,19 @@ public:
 				.UncheckedHoveredImage(FAppStyle::Get().GetBrush("Icons.Hidden"))
 				.UncheckedPressedImage(FAppStyle::Get().GetBrush("Icons.Hidden"))
 				.ToolTipText(NSLOCTEXT("FDeadlineJobPresetLibraryCustomization", "VisibleInMoveRenderQueueToolTip", "If true this property will be visible for overriding from Movie Render Queue."))
-				.IsChecked_Lambda([InPropertyPath]()
-				{
-					return FDeadlineCloudJobPresetDetailsCustomization::IsPropertyHiddenInMovieRenderQueue(InPropertyPath)
-								? ECheckBoxState::Unchecked
-								: ECheckBoxState::Checked;
-				})
+			//	.IsChecked_Lambda([InPropertyPath]()
+			//	{
+				//	return FDeadlineCloudJobPresetDetailsCustomization::IsPropertyHiddenInMovieRenderQueue(InPropertyPath)
+					//			? ECheckBoxState::Unchecked
+					//			: ECheckBoxState::Checked;
+					
+				//})
 			]
 		];
 	}
 
 	TSharedPtr<SCheckBox> CheckBoxPtr;
-};
+};*/
 
 TSharedRef<IPropertyTypeCustomization> FDeadlineCloudJobPresetDetailsCustomization::MakeInstance()
 {
@@ -158,24 +161,26 @@ void FDeadlineCloudJobPresetDetailsCustomization::CustomizeStructChildrenInAsset
 	PropertyRow.GetDefaultWidgets(NameWidget, ValueWidget, Row);
 
 	PropertyRow.CustomWidget(true)
-	.NameContent()
-	.MinDesiredWidth(Row.NameWidget.MinWidth)
-	.MaxDesiredWidth(Row.NameWidget.MaxWidth)
-	.HAlign(HAlign_Fill)
-	[
-		NameWidget.ToSharedRef()
-	]
-	.ValueContent()
-	.MinDesiredWidth(Row.ValueWidget.MinWidth)
-	.MaxDesiredWidth(Row.ValueWidget.MaxWidth)
-	.VAlign(VAlign_Center)
-	[
-		ValueWidget.ToSharedRef()
-	]
-	.ExtensionContent()
-	[
-		SNew(SEyeCheckBox, *PropertyRow.GetPropertyHandle()->GetProperty()->GetPathName())
-	];
+		.NameContent()
+		.MinDesiredWidth(Row.NameWidget.MinWidth)
+		.MaxDesiredWidth(Row.NameWidget.MaxWidth)
+		.HAlign(HAlign_Fill)
+		[
+			NameWidget.ToSharedRef()
+		]
+		.ValueContent()
+		.MinDesiredWidth(Row.ValueWidget.MinWidth)
+		.MaxDesiredWidth(Row.ValueWidget.MaxWidth)
+		.VAlign(VAlign_Center)
+		[
+			ValueWidget.ToSharedRef()
+		];
+//	.ExtensionContent()
+//	[
+		//FDeadlineCloudDetailsWidgetsHelper::CreateEyeCheckBoxWidget(*PropertyRow.GetPropertyHandle()->GetProperty()->GetPathName())
+		//SNew(SEyeCheckBox, *PropertyRow.GetPropertyHandle()->GetProperty()->GetPathName())
+		
+//	];
 }
 
 void FDeadlineCloudJobPresetDetailsCustomization::CustomizeStructChildrenInMovieRenderQueue(
@@ -255,6 +260,7 @@ void FDeadlineCloudAttachmentDetailsCustomization::CustomizeChildren(
 
 bool FDeadlineCloudJobPresetDetailsCustomization::IsPropertyHiddenInMovieRenderQueue(const FName& InPropertyPath)
 {
+
 	return false;
 }
 
