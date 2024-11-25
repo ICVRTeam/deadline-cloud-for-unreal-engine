@@ -63,7 +63,6 @@ void UMoviePipelineDeadlineCloudExecutorJob::GetPresetStructWithOverrides(UStruc
 
         const FName PropertyPath = *Property->GetPathName();
 
-        // TODO Also skip if it's shown but not enabled
         if (!IsPropertyRowEnabledInMovieRenderJob(PropertyPath))
         {
             continue;
@@ -381,16 +380,16 @@ void FMoviePipelineDeadlineCloudExecutorJobCustomization::CustomizeDetails(IDeta
     TArray<TSharedRef<IPropertyHandle>> OutMrpCategoryProperties;
     MrpCategory.GetDefaultProperties(OutMrpCategoryProperties);
 
-    // We hide these properties because we want to use "Name", "UserName" and "Comment" from the Deadline preset
-    const TArray<FName> PropertiesToHide = { "JobName", "Author", "Comment", "ExtraCmdArgs"};
-
-    for (const TSharedRef<IPropertyHandle>& PropertyHandle : OutMrpCategoryProperties)
-    {
-        if (PropertiesToHide.Contains(PropertyHandle->GetProperty()->GetFName()))
-        {
-            PropertyHandle->MarkHiddenByCustomization();
-        }
-    }
+//    // We hide these properties because we want to use "Name", "UserName" and "Comment" from the Deadline preset
+//    const TArray<FName> PropertiesToHide = { "JobName", "Author", "Comment", "ExtraCmdArgs"};
+//
+//    for (const TSharedRef<IPropertyHandle>& PropertyHandle : OutMrpCategoryProperties)
+//    {
+//        if (PropertiesToHide.Contains(PropertyHandle->GetProperty()->GetFName()))
+//        {
+//            PropertyHandle->MarkHiddenByCustomization();
+//        }
+//    }
 
 
     TSharedPtr<IPropertyHandle> JobPropertyHandle = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UMoviePipelineDeadlineCloudExecutorJob, JobPreset));

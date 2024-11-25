@@ -472,22 +472,6 @@ void FDeadlineCloudStepParameterListBuilder::OnGenerateEntry(TSharedRef<IPropert
                 return true;
             })
     );
-    /*
-    PropertyRow.IsEnabled(TAttribute<bool>::CreateLambda([this, NameWidget]() -> bool
-        {
-        //todo: only if MRQ
-            if (MrqJob)
-            {
-                //get name from ValueWidget
-                //ValueWidget->
-                return false;
-                //return ParameterName == "ExtraCmdArgs";
-            }
-            else
-            {
-                return true;
-            }
-        }));*/
 }
 
 
