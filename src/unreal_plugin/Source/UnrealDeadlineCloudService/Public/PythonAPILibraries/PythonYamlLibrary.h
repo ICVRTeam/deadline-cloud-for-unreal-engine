@@ -18,9 +18,9 @@
 UENUM(BlueprintType)
 enum class EValueType : uint8
 {
-	INT = 0 UMETA(DisplayName = "Integer"),
-	FLOAT  UMETA(DisplayName = "Float"),
-	STRING  UMETA(DisplayName = "String"),
+	INT UMETA(DisplayName = "Integer"),
+	FLOAT   UMETA(DisplayName = "Float"),
+	STRING UMETA(DisplayName = "String"),
 	PATH    UMETA(DisplayName = "Path")
 };
 

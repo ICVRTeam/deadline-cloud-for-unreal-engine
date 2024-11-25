@@ -43,6 +43,7 @@ public:
         return PropertiesToShow.Contains(PropertyName);
     }
 
+
 private:
     void OnGenerateEntry(TSharedRef<IPropertyHandle> ElementProperty, int32 ElementIndex, IDetailChildrenBuilder& ChildrenBuilder) const;
 
@@ -63,7 +64,7 @@ public:
     bool IsEnabled(TSharedRef<IPropertyHandle> InPropertyHandle) const;
 
 	FDeadlineCloudStepParametersArrayCustomization() = default;
-	
+
 	/** Begin IPropertyTypeCustomization interface */
 	virtual void CustomizeHeader(
 		TSharedRef<IPropertyHandle> InPropertyHandle,
@@ -104,7 +105,6 @@ private:
 
     EValueType Type;
     TSharedPtr<IPropertyHandleArray> ArrayProperty;
-
 };
 
 class FDeadlineCloudStepParameterListCustomization : public IPropertyTypeCustomization
@@ -117,7 +117,7 @@ public:
     }
 
 	FDeadlineCloudStepParameterListCustomization() = default;
-	
+
 	/** Begin IPropertyTypeCustomization interface */
 	virtual void CustomizeHeader(
 		TSharedRef<IPropertyHandle> InPropertyHandle,

@@ -60,6 +60,7 @@ void FDeadlineCloudJobDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuil
     IDetailPropertyRow* HideRow = MyDetailLayout->EditDefaultProperty(HideHandle);
     HideRow->Visibility(EVisibility::Collapsed);
 
+
     /* Consistency check */
     if (Settings.IsValid() && Settings->GetJobParameters().Num() > 0)
     {
@@ -237,6 +238,7 @@ bool FDeadlineCloudJobDetails::IsEnvironmentContainsErrors() const
         {
             return true;
         }
+
         ExistingEnvironment.Add(Environment);
     }
 
@@ -310,6 +312,7 @@ bool FDeadlineCloudJobParametersArrayBuilder::IsPropertyHidden(FName Parameter) 
     return Contains;
 }
 
+
 TSharedRef<FDeadlineCloudJobParametersArrayBuilder> FDeadlineCloudJobParametersArrayBuilder::MakeInstance(TSharedRef<IPropertyHandle> InPropertyHandle)
 {
     TSharedRef<FDeadlineCloudJobParametersArrayBuilder> Builder =
@@ -318,7 +321,6 @@ TSharedRef<FDeadlineCloudJobParametersArrayBuilder> FDeadlineCloudJobParametersA
     Builder->OnGenerateArrayElementWidget(
         FOnGenerateArrayElementWidget::CreateSP(Builder, &FDeadlineCloudJobParametersArrayBuilder::OnGenerateEntry));
     return Builder;
-
 }
 
 FDeadlineCloudJobParametersArrayBuilder::FDeadlineCloudJobParametersArrayBuilder(TSharedRef<IPropertyHandle> InPropertyHandle)
@@ -423,6 +425,7 @@ void FDeadlineCloudJobParametersArrayBuilder::ResetToDefaultHandler(TSharedPtr<I
     PropertyHandle->SetValue(DefaultValue);
 }
 
+
 bool FDeadlineCloudJobParametersArrayBuilder::IsEyeWidgetEnabled(FName Parameter) const
 {
     bool result = false;
@@ -439,6 +442,7 @@ bool FDeadlineCloudJobParametersArrayBuilder::IsEyeWidgetEnabled(FName Parameter
     }
     return result;
 }
+
 
 void FDeadlineCloudJobParametersArrayBuilder::OnGenerateEntry(TSharedRef<IPropertyHandle> ElementProperty, int32 ElementIndex, IDetailChildrenBuilder& ChildrenBuilder) const
 {
@@ -532,19 +536,16 @@ void FDeadlineCloudJobParametersArrayBuilder::OnGenerateEntry(TSharedRef<IProper
             EyeWidget
         ];
 
-      ValueWidget->SetEnabled(
-          TAttribute<bool>::CreateLambda([this]()
-              {
-                  if (OnIsEnabled.IsBound())
-                      return OnIsEnabled.Execute();
-                  return true;
-              })
+    ValueWidget->SetEnabled(
+        TAttribute<bool>::CreateLambda([this]()
+            {
+                if (OnIsEnabled.IsBound())
+                    return OnIsEnabled.Execute();
+                return true;
+            })
     );
 
     PropertyRow.Visibility(IsPropertyHidden(FName(ParameterName)) ? EVisibility::Collapsed : EVisibility::Visible);
-
-
-
 }
 
 UMoviePipelineDeadlineCloudExecutorJob* FDeadlineCloudJobParametersArrayCustomization::GetMrqJob(TSharedRef<IPropertyHandle> Handle)
@@ -601,5 +602,4 @@ void FDeadlineCloudJobParametersArrayCustomization::CustomizeChildren(TSharedRef
 
     InChildBuilder.AddCustomBuilder(ArrayBuilder.ToSharedRef());
 }
-
 #undef LOCTEXT_NAMESPACE
