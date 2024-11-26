@@ -3,8 +3,9 @@ import re
 import sys
 import json
 import unreal
-from collections import OrderedDict
+from enum import IntEnum
 from typing import Any, Optional
+from collections import OrderedDict
 from dataclasses import dataclass, asdict
 
 from openjd.model.v2023_09 import JobTemplate
@@ -50,6 +51,13 @@ from deadline.unreal_submitter import exceptions
 
 
 logger = get_logger()
+
+
+class TransferProjectFilesStrategy(IntEnum):
+
+    S3 = 0
+    P4 = 1
+    UGS = 2
 
 
 @dataclass
@@ -126,6 +134,8 @@ class UnrealOpenJob(UnrealOpenJobEntity):
         self._environments: list[UnrealOpenJobEnvironment] = environments or []
         self._job_shared_settings = job_shared_settings
         self._asset_references = asset_references
+
+        self._transfer_files_strategy = TransferProjectFilesStrategy.S3
 
     @property
     def job_shared_settings(self) -> JobSharedSettings:
@@ -333,19 +343,23 @@ class RenderUnrealOpenJob(UnrealOpenJob):
             asset_references,
         )
 
-        self._mrq_job = mrq_job
-
-        for step in self._steps:
-            if isinstance(step, RenderUnrealOpenJobStep) and step.mrq_job is None:
-                step.mrq_job = self._mrq_job
+        self._mrq_job = None
+        if mrq_job:
+            self.mrq_job = mrq_job
 
         self._dependency_collector = DependencyCollector()
 
         self._manifest_path = ""
         self._extra_cmd_args_file_path = ""
 
-        if self._name is None and isinstance(self._mrq_job, unreal.MoviePipelineExecutorJob):
-            self._name = self._mrq_job.job_name
+        if self._name is None and isinstance(self.mrq_job, unreal.MoviePipelineExecutorJob):
+            self._name = self.mrq_job.job_name
+
+        ugs_envs = [
+            env for env in self._environments if isinstance(env, UnrealOpenJobUgsEnvironment)
+        ]
+        if ugs_envs:
+            self._transfer_files_strategy = TransferProjectFilesStrategy.UGS
 
     @property
     def mrq_job(self):
@@ -354,19 +368,8 @@ class RenderUnrealOpenJob(UnrealOpenJob):
     @mrq_job.setter
     def mrq_job(self, value):
         self._mrq_job = value
-
-        for step in self._steps:
-            step.host_requirements = HostRequirements.from_u_deadline_cloud_host_requirements(
-                self._mrq_job.preset_overrides.host_requirements
-            )
-
-            if isinstance(step, RenderUnrealOpenJobStep):
-                step.mrq_job = self._mrq_job
-
-                for parameter in self._mrq_job.step_parameter_overrides.parameters:
-                    step.update_extra_parameter(
-                        UnrealOpenJobStepParameterDefinition.from_unreal_param_definition(parameter)
-                    )
+        self._update_steps_settings_from_mrq_job(self._mrq_job)
+        self._update_environments_settings_from_mrq_job(self._mrq_job)
 
         if self._mrq_job.parameter_definition_overrides.parameters:
             self._extra_parameters = [
@@ -447,14 +450,65 @@ class RenderUnrealOpenJob(UnrealOpenJob):
         """Count Render Step in the given Render Job data asset"""
         return sum(isinstance(s, unreal.DeadlineCloudRenderStep) for s in data_asset.steps)
 
-    def _have_ugs_environment(self) -> bool:
-        return (
-            next(
-                (env for env in self._environments if isinstance(env, UnrealOpenJobUgsEnvironment)),
+    def _update_steps_settings_from_mrq_job(
+        self, mrq_job: unreal.MoviePipelineDeadlineCloudExecutorJob
+    ):
+        for step in self._steps:
+            # update host requirements
+            step.host_requirements = HostRequirements.from_u_deadline_cloud_host_requirements(
+                mrq_job.preset_overrides.host_requirements
+            )
+
+            # set mrq job to render step
+            if isinstance(step, RenderUnrealOpenJobStep):
+                step.mrq_job = mrq_job
+
+            # find appropriate step override
+            step_override = next(
+                (override for override in mrq_job.steps_overrides if override.name == step.name),
                 None,
             )
-            is not None
-        )
+            if not step_override:
+                continue
+
+            # update depends on
+            step.step_dependencies = list(step_override.depends_on)
+
+            # update step environments
+            for env in step.environments:
+                step_environment_override = next(
+                    (
+                        env_override
+                        for env_override in step_override.environments_overrides
+                        if env_override.name == env.name
+                    ),
+                    None,
+                )
+                if step_environment_override:
+                    env.variables = step_environment_override.variables.variables
+
+            # update step parameters
+            for override_param in step_override.task_parameter_definitions.parameters:
+                step.update_extra_parameter(
+                    UnrealOpenJobStepParameterDefinition.from_unreal_param_definition(
+                        override_param
+                    )
+                )
+
+    def _update_environments_settings_from_mrq_job(
+        self, mrq_job: unreal.MoviePipelineDeadlineCloudExecutorJob
+    ):
+        for env in self._environments:
+            override_environment = next(
+                (
+                    env_override
+                    for env_override in mrq_job.environments_overrides
+                    if env_override.name == env.name
+                ),
+                None,
+            )
+            if override_environment:
+                env.variables = override_environment.variables.variables
 
     def _write_cmd_args_to_file(self, cmd_args_str: str) -> str:
 
@@ -512,7 +566,10 @@ class RenderUnrealOpenJob(UnrealOpenJob):
             job_parameter_value=common.get_project_file_path(),
         )
 
-        if self._have_ugs_environment():
+        if self._transfer_files_strategy in [
+            TransferProjectFilesStrategy.P4,
+            TransferProjectFilesStrategy.S3,
+        ]:
             perforce_api = PerforceApi()
 
             unfilled_parameter_values = RenderUnrealOpenJob.update_job_parameter_values(
@@ -751,7 +808,7 @@ class RenderUnrealOpenJob(UnrealOpenJob):
 
         asset_references = super().get_asset_references()
 
-        if not self._have_ugs_environment():
+        if self._transfer_files_strategy == TransferProjectFilesStrategy.S3:
             # add dependencies to attachments
             asset_references.input_filenames.update(self._get_mrq_job_dependency_paths())
 

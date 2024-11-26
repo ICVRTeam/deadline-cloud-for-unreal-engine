@@ -1,2 +1,0 @@
-handler: render
-queue_manifest_path: C:/LocalProjects/AWS_RND/Saved/MovieRenderPipeline/QueueManifest.utxt
