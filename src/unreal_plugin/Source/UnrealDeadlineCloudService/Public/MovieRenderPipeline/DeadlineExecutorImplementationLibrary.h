@@ -3,34 +3,27 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "PythonAPILibrary.h"
-
-// Movie Pipeline Includes
-
-
 
 #include "MoviePipelineQueue.h"
 #include "MoviePipelinePrimaryConfig.h"
 #include "MovieRenderPipelineEditor/Public/MoviePipelineQueueSubsystem.h"
 #include "MovieRenderPipelineEditor/Public/MovieRenderPipelineSettings.h"
+#include "MovieRenderPipelineCore/Public/MoviePipelineExecutor.h"
+#include "MovieRenderPipelineCore/Public/MoviePipelineQueue.h"
 
-// Misc
 #include "Editor.h"
 #include "UnrealEd.h"
 #include "EditorSubsystem.h"
 #include "Subsystems/ImportSubsystem.h"
 #include "Subsystems/AssetEditorSubsystem.h" 
 
-
-
-#include "MovieRenderPipelineCore/Public/MoviePipelineExecutor.h"
-#include "MovieRenderPipelineCore/Public/MoviePipelineQueue.h"
+#include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/Object.h"
 #include "DeadlineExecutorImplementationLibrary.generated.h"
 
 
 UCLASS()
-class UNREALDEADLINECLOUDSERVICE_API UDeadlineExecutorImplementationLibrary : public UObject, public TPythonAPILibraryBase<UDeadlineExecutorImplementationLibrary>
+class UNREALDEADLINECLOUDSERVICE_API UDeadlineExecutorImplementationLibrary : public UObject
 {
 	GENERATED_BODY()
 
@@ -38,4 +31,15 @@ public:
 	UFUNCTION(BlueprintCallable)
 	static TSubclassOf<UMoviePipelineExecutorBase> GetDefaultDeadlineExecutor();
 	
+};
+
+UCLASS(Blueprintable)
+class  ULevelSelector : public UObject
+{
+	GENERATED_BODY()
+
+public:
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Level Selection", meta = (AllowedClasses = "/Script/Engine.World"))
+	TSoftObjectPtr<UWorld> Map;
 };

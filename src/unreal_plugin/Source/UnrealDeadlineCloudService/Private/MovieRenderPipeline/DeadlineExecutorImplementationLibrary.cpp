@@ -1,8 +1,7 @@
-#pragma once
-#include "DeadlineExecutorImplementationLibrary.h"
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#include "MovieRenderPipeline/DeadlineExecutorImplementationLibrary.h"
 
 #define LOCTEXT_NAMESPACE "DeadlineExecutor"
-
 
  TSubclassOf<UMoviePipelineExecutorBase> UDeadlineExecutorImplementationLibrary::GetDefaultDeadlineExecutor()
 {
