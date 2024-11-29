@@ -9,56 +9,6 @@
 #include "Widgets/Input/SCheckBox.h"
 #include "Misc/EngineVersionComparison.h"
 #include "DeadlineCloudJobSettings/DeadlineCloudDetailsWidgetsHelper.h"
-/*
-class
-: public SCompoundWidget
-{
-public:
-    SLATE_BEGIN_ARGS( SEyeCheckBox ){}
-
-    SLATE_END_ARGS()
-
-    void Construct(const FArguments& InArgs, const FName& InPropertyPath)
-    {
-        ChildSlot
-        [
-            SNew(SBox)
-            .Visibility(EVisibility::Visible)
-            .HAlign(HAlign_Right)
-            .WidthOverride(28)
-            .HeightOverride(20)
-#if UE_VERSION_NEWER_THAN(5, 1, -1)
-            .Padding(4, 0)
-#else
-            .Padding(4)
-#endif
-            [
-                SAssignNew(CheckBoxPtr, SCheckBox)
-                .Style(&FAppStyle::Get().GetWidgetStyle<FCheckBoxStyle>("ToggleButtonCheckbox"))
-                .Visibility_Lambda([this]()
-                {
-                    return CheckBoxPtr.IsValid() && !CheckBoxPtr->IsChecked() ? EVisibility::Visible : IsHovered() ? EVisibility::Visible : EVisibility::Hidden;
-                })
-                .CheckedImage(FAppStyle::Get().GetBrush("Icons.Visible"))
-                .CheckedHoveredImage(FAppStyle::Get().GetBrush("Icons.Visible"))
-                .CheckedPressedImage(FAppStyle::Get().GetBrush("Icons.Visible"))
-                .UncheckedImage(FAppStyle::Get().GetBrush("Icons.Hidden"))
-                .UncheckedHoveredImage(FAppStyle::Get().GetBrush("Icons.Hidden"))
-                .UncheckedPressedImage(FAppStyle::Get().GetBrush("Icons.Hidden"))
-                .ToolTipText(NSLOCTEXT("FDeadlineJobPresetLibraryCustomization", "VisibleInMoveRenderQueueToolTip", "If true this property will be visible for overriding from Movie Render Queue."))
-            //	.IsChecked_Lambda([InPropertyPath]()
-            //	{
-                //	return FDeadlineCloudJobPresetDetailsCustomization::IsPropertyHiddenInMovieRenderQueue(InPropertyPath)
-                    //			? ECheckBoxState::Unchecked
-                    //			: ECheckBoxState::Checked;
-
-                //})
-            ]
-        ];
-    }
-
-    TSharedPtr<SCheckBox> CheckBoxPtr;
-};*/
 
 TSharedRef<IPropertyTypeCustomization> FDeadlineCloudJobPresetDetailsCustomization::MakeInstance()
 {
@@ -113,16 +63,10 @@ void FDeadlineCloudJobPresetDetailsCustomization::CustomizeChildren(TSharedRef<I
             {
                 if (OuterJob)
                 {
-                    // IDetailGroup& NewGroup = CreatedCategories.FindChecked(StructName)->AddGroup(PropertyCategoryName, FText::FromName(PropertyCategoryName), true);
-                    // UE_LOG(LogTemp, Log, TEXT("Category 0: %s"), *StructName.ToString());
-                    // GroupToUse = CreatedCategories.Add(PropertyCategoryName, &NewGroup);
                     GroupToUse = CreatedCategories.FindChecked(StructName);
                 }
                 else
                 {
-                    // IDetailGroup& NewGroup = ChildBuilder.AddGroup(PropertyCategoryName, FText::FromName(PropertyCategoryName));
-                    // NewGroup.ToggleExpansion(true);
-                    // GroupToUse = CreatedCategories.Add(PropertyCategoryName, &NewGroup);
                     IDetailGroup& NewGroup = ChildBuilder.AddGroup(StructName, StructHandle->GetPropertyDisplayName());
                     NewGroup.ToggleExpansion(true);
                     GroupToUse = CreatedCategories.Add(PropertyCategoryName, &NewGroup);
@@ -175,12 +119,6 @@ void FDeadlineCloudJobPresetDetailsCustomization::CustomizeStructChildrenInAsset
         [
             ValueWidget.ToSharedRef()
         ];
-    //	.ExtensionContent()
-    //	[
-            //FDeadlineCloudDetailsWidgetsHelper::CreateEyeCheckBoxWidget(*PropertyRow.GetPropertyHandle()->GetProperty()->GetPathName())
-            //SNew(SEyeCheckBox, *PropertyRow.GetPropertyHandle()->GetProperty()->GetPathName())
-
-    //	];
 }
 
 void FDeadlineCloudJobPresetDetailsCustomization::CustomizeStructChildrenInMovieRenderQueue(
@@ -228,11 +166,6 @@ void FDeadlineCloudAttachmentDetailsCustomization::CustomizeChildren(
     UMoviePipelineDeadlineCloudExecutorJob* OuterJob = FPropertyAvailabilityHandler::GetOuterJob(StructHandle);
     PropertyOverrideHandler = MakeShared<FPropertyAvailabilityHandler>(OuterJob);
 
-    // Auto-detected are not enabled for overrides
-    // PropertyOverrideHandler->EnableOverridesInMovieRenderQueue(ShowAutoDetectedRow);
-
-    // Auto-detected are not enabled for overrides
-    // PropertyOverrideHandler->EnableOverridesInMovieRenderQueue(AutoDetectedPathsRow);
 
     if (OuterJob)
     {
@@ -338,8 +271,6 @@ void FDeadlineCloudAttachmentArrayBuilder::OnGenerateEntry(
     int32, IDetailChildrenBuilder& ChildrenBuilder) const
 {
     IDetailPropertyRow& PropertyRow = ChildrenBuilder.AddProperty(ElementProperty);
-    // PropertyRow.ShowPropertyButtons(true);
-    // PropertyRow.ShouldAutoExpand(false);
 
     // Hide the reset to default button since it provides little value
     const FResetToDefaultOverride ResetDefaultOverride =
@@ -474,10 +405,6 @@ void FPropertyAvailabilityHandler::EnableInMovieRenderQueue(IDetailPropertyRow& 
     );
 
     PropertyRow
-        // .OverrideResetToDefault(
-        // 	FResetToDefaultOverride::Create(
-        // 		FIsResetToDefaultVisible::CreateStatic( &FDeadlineCloudJobPresetDetailsCustomization::IsResetToDefaultVisibleOverride, Job),
-        // 		FResetToDefaultHandler::CreateStatic(&FDeadlineCloudJobPresetDetailsCustomization::ResetToDefaultOverride, Job)))
         .CustomWidget(true)
         .NameContent()
         .MinDesiredWidth(Row.NameWidget.MinWidth)

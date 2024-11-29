@@ -441,7 +441,6 @@ void FDeadlineCloudStepParameterListBuilder::OnGenerateEntry(TSharedRef<IPropert
 
 	PropertyRow.OverrideResetToDefault(ResetDefaultOverride);
 	PropertyRow.ShowPropertyButtons(true);
-	//PropertyRow.ShowPropertyButtons(false);
 
 	TSharedPtr<SWidget> NameWidget;
 	TSharedPtr<SWidget> ValueWidget;
