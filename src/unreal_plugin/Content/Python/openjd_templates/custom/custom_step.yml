@@ -1,0 +1,29 @@
+name: CustomScript
+parameterSpace:
+  taskParameterDefinitions:
+  - name: Handler
+    type: STRING
+    range: ['custom']
+  - name: ScriptPath
+    type: PATH
+    range: []
+script:
+  embeddedFiles:
+  - name: runData
+    filename: run-data.yaml
+    type: TEXT
+    data: |
+      handler: {{Task.Param.Handler}}
+      script_path: {{Task.Param.ScriptPath}}
+  actions:
+    onRun:
+      command: unreal-engine-openjd
+      args:
+      - daemon
+      - run
+      - --connection-file
+      - '{{Session.WorkingDirectory}}/connection.json'
+      - --run-data
+      - file://{{ Task.File.runData }}
+      cancelation:
+        mode: NOTIFY_THEN_TERMINATE
