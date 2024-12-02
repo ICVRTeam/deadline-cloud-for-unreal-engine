@@ -35,13 +35,15 @@ public:
     FUIAction EmptyCopyPasteAction;
     FOnIsEnabled OnIsEnabled;
 
+
+    void OnEyeHideWidgetButtonClicked(FName NameWidget) const;
+    bool IsPropertyHidden(FName Parameter) const;
     TObjectPtr<UMoviePipelineDeadlineCloudExecutorJob> MrqJob;
+    TObjectPtr<UDeadlineCloudStep> Step;
+    FName StepName;
 
     static UMoviePipelineDeadlineCloudExecutorJob* GetMrqJob(TSharedRef<IPropertyHandle> Handle);
-//    bool IsPropertyEditable(FName PropertyName)
-//    {
-//        return PropertiesToShow.Contains(PropertyName);
-//    }
+
 
 
 private:
@@ -49,6 +51,8 @@ private:
 
     TArray<FName> PropertiesToShow = { "ChunkSize" };
 	TSharedPtr<IPropertyHandleArray> ArrayProperty;
+
+    bool IsEyeWidgetEnabled(FName Parameter) const;
 };
 
 class FDeadlineCloudStepParametersArrayCustomization : public IPropertyTypeCustomization
@@ -78,7 +82,8 @@ public:
     /** End IPropertyTypeCustomization interface */
 
 private:
-
+    static UMoviePipelineDeadlineCloudExecutorJob* GetMrqJob(TSharedRef<IPropertyHandle> Handle);
+    static UDeadlineCloudStep* GetStep(TSharedRef<IPropertyHandle> Handle);
     TSharedPtr<FDeadlineCloudStepParametersArrayBuilder> ArrayBuilder;
 };
 
@@ -139,15 +144,18 @@ class FDeadlineCloudStepDetails : public IDetailCustomization
 {
 private:
     TWeakObjectPtr<UDeadlineCloudStep> Settings;
-    IDetailLayoutBuilder* MyDetailLayout;
+    IDetailLayoutBuilder* MainDetailLayout;
 public:
     static TSharedRef<IDetailCustomization> MakeInstance();
     virtual  void CustomizeDetails(IDetailLayoutBuilder& DetailBuilder) override;
 
+    void OnViewAllButtonClicked();
     void OnConsistencyButtonClicked();
     bool CheckConsistency(UDeadlineCloudStep* Step);
     bool bCheckConsistensyPassed = true;
     EVisibility GetWidgetVisibility() const { return (!bCheckConsistensyPassed) ? EVisibility::Visible : EVisibility::Collapsed; }
+
+    EVisibility GetEyeWidgetVisibility() const;
 
     bool IsEnvironmentContainsErrors() const;
     EVisibility GetEnvironmentErrorWidgetVisibility() const;
@@ -156,6 +164,6 @@ public:
 private:
     // TSharedRef<SWidget> GenerateStringsArrayContent(const TArray<FString>& StringArray);
     // TSharedRef<SWidget> GenerateTasksContent(const TArray<FStepTaskParameterDefinition> tasks);
-
+    void RespondToEvent();
     void ForceRefreshDetails();
 };
