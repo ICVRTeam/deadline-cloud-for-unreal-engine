@@ -59,7 +59,7 @@ public:
 		
 		FReply HandleButtonClicked()
 		{
-			bShowHidden = !(bShowHidden);
+			bShowHidden = !bShowHidden;
 
 			if (OnEyeUpdateButtonClicked.IsBound())
 			{
@@ -154,9 +154,6 @@ public:
 		bool bIsChecked;
 
 	};
-
-
-	//static TSharedRef<SWidget> CreateEyeCheckBoxWidget(FName RsultString);
 	static TSharedRef<SWidget> CreateEyeUpdateWidget();
 	
 private:
