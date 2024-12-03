@@ -5,7 +5,7 @@ from deadline.unreal_submitter.submitter import (
 )
 
 from deadline.unreal_submitter.unreal_open_job.unreal_open_job import (
-    UgsRenderUnrealJob,
+    UgsRenderUnrealOpenJob,
 )
 
 from deadline.unreal_submitter.unreal_open_job.unreal_open_job_step import (
@@ -36,7 +36,7 @@ def main():
     # Get jobs from Render Queue or you can create your own
     queue = unreal.get_editor_subsystem(unreal.MoviePipelineQueueSubsystem).get_queue()
     for job in queue.get_jobs():
-        default_render_job = UgsRenderUnrealJob(
+        default_render_job = UgsRenderUnrealOpenJob(
             steps=[
                 UgsRenderUnrealOpenJobStep(
                     extra_parameters=[

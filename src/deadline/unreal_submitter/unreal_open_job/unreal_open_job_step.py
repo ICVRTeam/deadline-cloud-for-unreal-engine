@@ -466,3 +466,9 @@ class RenderUnrealOpenJobStep(UnrealOpenJobStep):
 class UgsRenderUnrealOpenJobStep(RenderUnrealOpenJobStep):
 
     default_template_path = settings.UGS_RENDER_STEP_TEMPLATE_DEFAULT_PATH
+
+
+# Perforce (non UGS) Steps
+class P4RenderUnrealOpenJobStep(RenderUnrealOpenJobStep):
+
+    default_template_path = settings.P4_RENDER_STEP_TEMPLATE_DEFAULT_PATH

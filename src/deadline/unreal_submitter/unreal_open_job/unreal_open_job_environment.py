@@ -77,7 +77,7 @@ class LaunchEditorUnrealOpenJobEnvironment(UnrealOpenJobEnvironment):
 
 
 # UGS Environments
-class UnrealOpenJobUgsEnvironment(UnrealOpenJobEnvironment):
+class UgsUnrealOpenJobEnvironment(UnrealOpenJobEnvironment):
     pass
 
 
@@ -91,3 +91,21 @@ class UgsSyncCmfUnrealOpenJobEnvironment(UnrealOpenJobUgsEnvironment):
 
 class UgsSyncSmfUnrealOpenJobEnvironment(UnrealOpenJobUgsEnvironment):
     default_template_path = settings.UGS_SYNC_SMF_ENVIRONMENT_TEMPLATE_DEFAULT_PATH
+
+
+# Perforce (non UGS) Environments
+class P4UnrealOpenJobEnvironment(UnrealOpenJobEnvironment):
+    pass
+
+
+class P4LaunchEditorUnrealOpenJobEnvironment(P4UnrealOpenJobEnvironment):
+    default_template_path = settings.P4_LAUNCH_ENVIRONMENT_TEMPLATE_DEFAULT_PATH
+
+
+class P4SyncCmfUnrealOpenJobEnvironment(P4UnrealOpenJobEnvironment):
+    default_template_path = settings.P4_SYNC_CMF_ENVIRONMENT_TEMPLATE_DEFAULT_PATH
+
+
+class P4SyncSmfUnrealOpenJobEnvironment(P4UnrealOpenJobEnvironment):
+    default_template_path = settings.P4_SYNC_SMF_ENVIRONMENT_TEMPLATE_DEFAULT_PATH
+
