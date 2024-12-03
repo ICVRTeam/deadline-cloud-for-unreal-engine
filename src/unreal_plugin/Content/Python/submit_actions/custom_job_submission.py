@@ -1,4 +1,6 @@
 import os
+import argparse
+import unreal
 
 from deadline.unreal_submitter import settings
 from deadline.unreal_submitter.submitter import (
@@ -52,3 +54,24 @@ def main(script_path: str):
     submitted_job_ids = submitter.submit_jobs()
     for job_id in submitted_job_ids:
         logger.info(f"Job submitted: {job_id}")
+
+
+if __name__ == "__main__":
+    unreal.log("Executing test script")
+
+    parser = argparse.ArgumentParser(
+        description="Submits test script",
+    )
+
+    parser.add_argument(
+        "--script_path",
+        type=str,
+        help="Python script path"
+    )
+
+
+    # Parse the arguments and execute the function callback
+    arguments = parser.parse_args()
+    #arguments.func(arguments)
+    main(arguments.script_path)
+    
