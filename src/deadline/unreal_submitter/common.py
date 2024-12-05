@@ -1,7 +1,15 @@
 #  Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 
+import os
+import json
 import unreal
+from typing import Any
 from pathlib import Path
+
+from deadline.unreal_logger import get_logger
+
+
+logger = get_logger()
 
 
 def get_project_file_path() -> str:
@@ -44,3 +52,27 @@ def soft_obj_path_to_str(soft_obj_path: unreal.SoftObjectPath) -> str:
     """
     obj_ref = unreal.SystemLibrary.conv_soft_obj_path_to_soft_obj_ref(soft_obj_path)
     return unreal.SystemLibrary.conv_soft_object_reference_to_string(obj_ref)
+
+
+def create_deadline_cloud_temp_file(file_prefix: str, file_data: Any, file_ext: str) -> str:
+    destination_dir = os.path.join(
+        unreal.Paths.project_saved_dir(),
+        "UnrealDeadlineCloudService",
+        file_prefix,
+    )
+    os.makedirs(destination_dir, exist_ok=True)
+
+    temp_file = unreal.Paths.create_temp_filename(
+        destination_dir, prefix=file_prefix, extension=file_ext
+    )
+
+    with open(temp_file, "w") as f:
+        logger.info(f"Saving {file_prefix} file '{temp_file}'")
+        if file_ext == ".json":
+            json.dump(file_data, f)
+        else:
+            f.write(file_data)
+
+    temp_file = unreal.Paths.convert_relative_path_to_full(temp_file).replace("\\", "/")
+
+    return temp_file

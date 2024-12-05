@@ -33,6 +33,11 @@ parameterDefinitions:
   type: STRING
   default: ""
 
+- name: ExtraCmdArgsFile
+  type: PATH
+  objectType: FILE
+  dataFlow: IN
+
 jobEnvironments:
   - name: LaunchUnrealEditor
     description: Launch UnrealEditor and define the current context as Remote Execution

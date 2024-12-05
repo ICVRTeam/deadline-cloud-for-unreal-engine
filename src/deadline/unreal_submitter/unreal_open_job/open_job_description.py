@@ -14,6 +14,7 @@ from deadline.unreal_submitter.common import (
     get_project_directory,
     get_project_file_path,
     soft_obj_path_to_str,
+    create_deadline_cloud_temp_file,
 )
 from deadline.unreal_submitter.unreal_dependency_collector.common import (
     DependencyFilters,
@@ -293,8 +294,24 @@ class OpenJobDescription:
                 "value": project_directory,
             },
             {"name": "OutputPath", "value": output_path},
-            {"name": "ExtraCmdArgs", "value": " ".join(cmd_args)},
         ]
+
+        cmd_args_str = " ".join(cmd_args)
+
+        cmd_args_param = {"name": "ExtraCmdArgs"}
+        if len(cmd_args_str) <= 1024:
+            cmd_args_param["value"] = cmd_args_str
+        else:
+            cmd_args_param["value"] = mrq_job.preset_overrides.job_shared_settings.extra_cmd_args
+        parameter_values.append(cmd_args_param)
+
+        cmd_args_file_param = {
+            "name": "ExtraCmdArgsFile",
+            "value": create_deadline_cloud_temp_file(
+                file_prefix="ExtraCmdArgsFile", file_data=cmd_args_str, file_ext=".txt"
+            ),
+        }
+        parameter_values.append(cmd_args_file_param)
 
         shared_parameter_values = JobSharedSettings(
             mrq_job.preset_overrides.job_shared_settings
