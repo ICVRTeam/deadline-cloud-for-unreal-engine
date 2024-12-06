@@ -29,10 +29,6 @@ parameterDefinitions:
   type: STRING
   default: ""
 
-- name: ExtraCmdArgs
-  type: STRING
-  default: ""
-
 - name: ExtraCmdArgsFile
   type: PATH
   objectType: FILE
@@ -50,7 +46,6 @@ jobEnvironments:
           type: TEXT
           data: |
             project_path: {{Param.ProjectFilePath}}
-            extra_cmd_args: {{Param.ExtraCmdArgs}}
             extra_cmd_args_file: {{Param.ExtraCmdArgsFile}}
       actions:
         onEnter:

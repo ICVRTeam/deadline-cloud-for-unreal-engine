@@ -274,8 +274,6 @@ class OpenJobDescription:
         # TODO handling unreal substitution templates
         output_path = output_path.replace("{project_dir}", project_directory)
 
-        cmd_args = self._get_ue_cmd_args(mrq_job)
-
         parameter_values = [
             {
                 "name": "LevelPath",
@@ -294,24 +292,15 @@ class OpenJobDescription:
                 "value": project_directory,
             },
             {"name": "OutputPath", "value": output_path},
+            {
+                "name": "ExtraCmdArgsFile",
+                "value": create_deadline_cloud_temp_file(
+                    file_prefix="ExtraCmdArgsFile",
+                    file_data=" ".join(self._get_ue_cmd_args(mrq_job)),
+                    file_ext=".txt",
+                ),
+            },
         ]
-
-        cmd_args_str = " ".join(cmd_args)
-
-        cmd_args_param = {"name": "ExtraCmdArgs"}
-        if len(cmd_args_str) <= 1024:
-            cmd_args_param["value"] = cmd_args_str
-        else:
-            cmd_args_param["value"] = mrq_job.preset_overrides.job_shared_settings.extra_cmd_args
-        parameter_values.append(cmd_args_param)
-
-        cmd_args_file_param = {
-            "name": "ExtraCmdArgsFile",
-            "value": create_deadline_cloud_temp_file(
-                file_prefix="ExtraCmdArgsFile", file_data=cmd_args_str, file_ext=".txt"
-            ),
-        }
-        parameter_values.append(cmd_args_file_param)
 
         shared_parameter_values = JobSharedSettings(
             mrq_job.preset_overrides.job_shared_settings
