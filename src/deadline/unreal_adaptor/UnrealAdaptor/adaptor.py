@@ -289,10 +289,6 @@ class UnrealAdaptor(Adaptor[AdaptorConfiguration]):
             with open(extra_cmd_args_file, "r") as f:
                 extra_cmd_str = f.read()
 
-        # If file is empty, read from Job parameter
-        if extra_cmd_str == "":
-            extra_cmd_str = self.init_data.get("extra_cmd_args", "")
-
         # Everythiing between -execcmds=" and " is the value we want to keep
         match = re.search(r'-execcmds=["\']([^"\']*)["\']', extra_cmd_str)
         if match:
