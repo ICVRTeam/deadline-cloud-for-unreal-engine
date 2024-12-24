@@ -37,13 +37,16 @@ class DataValidation:
         :type init_data: dict
 
         :raises jsonschema.exceptions.ValidationError: if the instance is invalid
-        :raises: jsonschema.exceptions.SchemaError: if the schema itself is invalid
+        :raises jsonschema.exceptions.SchemaError: if the schema itself is invalid
         """
         self.validators.init_data.validate(init_data)
 
     def validate_run_data(self, run_data: dict):
         """
         Validate the given run data
+
+        :param run_data: Run adaptor data
+        :type run_data: dict
 
         :raises jsonschema.exceptions.ValidationError: if the instance is invalid
         :raises jsonschema.exceptions.SchemaError: if the schema itself is invalid

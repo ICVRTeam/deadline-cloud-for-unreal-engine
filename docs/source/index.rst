@@ -1,11 +1,9 @@
-Welcome to deadline-cloud-for-unreal's documentation!
-=====================================================
+Welcome to deadline-cloud-for-unreal-engine's documentation!
+============================================================
+
 
 .. toctree::
    :maxdepth: 1
 
-   adaptor_deployment
-   plugin_installation
-   plugin_usage
-
-   code_documentation
+   docs_api/api
+   docs_usage/usage
