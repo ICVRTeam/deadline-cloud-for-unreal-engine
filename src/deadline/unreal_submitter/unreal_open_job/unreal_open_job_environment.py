@@ -110,19 +110,19 @@ class UgsUnrealOpenJobEnvironment(UnrealOpenJobEnvironment):
     pass
 
 
-class UgsLaunchEditorUnrealOpenJobEnvironment(UnrealOpenJobUgsEnvironment):
+class UgsLaunchEditorUnrealOpenJobEnvironment(UgsUnrealOpenJobEnvironment):
     """Predefined Environment for launching the Unreal Editor in UGS case"""
 
     default_template_path = settings.UGS_LAUNCH_ENVIRONMENT_TEMPLATE_DEFAULT_PATH
 
 
-class UgsSyncCmfUnrealOpenJobEnvironment(UnrealOpenJobUgsEnvironment):
+class UgsSyncCmfUnrealOpenJobEnvironment(UgsUnrealOpenJobEnvironment):
     """Predefined Environment for syncing the Unreal project via UGS on CMF farm"""
 
     default_template_path = settings.UGS_SYNC_CMF_ENVIRONMENT_TEMPLATE_DEFAULT_PATH
 
 
-class UgsSyncSmfUnrealOpenJobEnvironment(UnrealOpenJobUgsEnvironment):
+class UgsSyncSmfUnrealOpenJobEnvironment(UgsUnrealOpenJobEnvironment):
     """Predefined Environment for syncing the Unreal project via UGS on SMF farm"""
 
     default_template_path = settings.UGS_SYNC_SMF_ENVIRONMENT_TEMPLATE_DEFAULT_PATH
