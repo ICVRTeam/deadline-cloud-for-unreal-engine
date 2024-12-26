@@ -880,7 +880,7 @@ class RenderUnrealOpenJob(UnrealOpenJob):
         extra_cmd_args_file = common.create_deadline_cloud_temp_file(
             file_prefix=OpenJobParameterNames.UNREAL_EXTRA_CMD_ARGS_FILE,
             file_data=cmd_args_str,
-            file_ext=".txt"
+            file_ext=".txt",
         )
         unfilled_parameter_values = RenderUnrealOpenJob.update_job_parameter_values(
             job_parameter_values=unfilled_parameter_values,
@@ -1003,9 +1003,7 @@ class RenderUnrealOpenJob(UnrealOpenJob):
             if depot_path is not None:
                 depot_dependencies.append(depot_path)
             else:
-                logger.warning(
-                    f"Local file {local_path} does not exist on the Depot. Skipping ..."
-                )
+                logger.warning(f"Local file {local_path} does not exist on the Depot. Skipping ...")
 
         return depot_dependencies
 
