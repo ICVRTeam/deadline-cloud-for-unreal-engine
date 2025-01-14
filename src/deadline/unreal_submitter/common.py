@@ -5,9 +5,6 @@ import unreal
 from pathlib import Path
 
 
-content_dir = unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_content_dir())
-
-
 def get_project_file_path() -> str:
     """
     Returns the Unreal project OS path
@@ -79,6 +76,7 @@ def os_path_from_unreal_path(unreal_path, with_ext: bool = False):
     :rtype: str
     """
 
+    content_dir = unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_content_dir())
     os_path = str(unreal_path).replace("/Game/", content_dir)
 
     if with_ext:

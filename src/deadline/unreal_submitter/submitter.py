@@ -26,7 +26,7 @@ telemetry_client = get_deadline_cloud_library_telemetry_client()
 telemetry_client.update_common_details(
     {
         "deadline-cloud-for-unreal-engine-submitter-version": version,
-        # 5.4.3-34507850+++UE5+Release-5.4
+        # Example: 5.4.3-34507850+++UE5+Release-5.4
         "unreal-engine-version": unreal.SystemLibrary.get_engine_version(),
     }
 )
@@ -294,8 +294,6 @@ class UnrealMrqJobSubmitter(UnrealSubmitter):
     @error_notify("Data asset converting failed")
     def add_job(self, mrq_job: unreal.MoviePipelineExecutorJob):
         render_open_job = self.open_job_class.from_mrq_job(mrq_job)
-        for parameter in render_open_job._extra_parameters:
-            logger.info(f"Extra parameter: {parameter.to_dict()}")
         self._jobs.append(render_open_job)
 
 
