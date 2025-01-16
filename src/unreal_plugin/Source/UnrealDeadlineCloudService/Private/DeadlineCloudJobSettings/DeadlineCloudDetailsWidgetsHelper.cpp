@@ -59,7 +59,7 @@ public:
 
     void Construct(const FArguments& InArgs)
     {
-        PathProperty = InArgs._StringPropertyHandle;
+        StringProperty = InArgs._StringPropertyHandle;
 
         ChildSlot
             [
@@ -79,18 +79,18 @@ public:
 private:
     void HandleTextChanged(const FText& NewText)
     {
-        PathProperty->SetValue(NewText.ToString());
+        StringProperty->SetValue(NewText.ToString());
     }
 
     FText GetText() const
     {
         FString String;
-        PathProperty->GetValue(String);
+        StringProperty->GetValue(String);
 
         return FText::FromString(String);
     }
 
-    TSharedPtr<IPropertyHandle> PathProperty;
+    TSharedPtr<IPropertyHandle> StringProperty;
 };
 
 class SDeadlineCloudIntWidget : public SCompoundWidget
@@ -121,7 +121,7 @@ public:
                                     Property->GetValue(String);
                                     return FCString::Atoi(*String);
                                 })
-                            .OnValueCommitted_Lambda([this](int32 Value, ETextCommit::Type InCommitType)
+                            .OnValueCommitted_Lambda([this](int32 Value, ETextCommit::Type)
                                 {
                                     Property->SetValue(FString::FromInt(Value));
                                 })
@@ -163,7 +163,7 @@ public:
 
                                     return FCString::Atof(*String);
                                 })
-                            .OnValueCommitted_Lambda([this](float Value, ETextCommit::Type InCommitType)
+                            .OnValueCommitted_Lambda([this](float Value, ETextCommit::Type)
                                 {
                                     Property->SetValue(FString::SanitizeFloat(Value));
                                 })
