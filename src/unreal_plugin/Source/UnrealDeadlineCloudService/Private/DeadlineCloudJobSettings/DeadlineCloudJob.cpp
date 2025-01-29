@@ -117,7 +117,7 @@ TArray<FStepTaskParameterDefinition> UDeadlineCloudJob::GetAllStepParameters() c
 }
 
 
-FParametersConsistencyCheckResult UDeadlineCloudJob::CheckJobParametersConsistency(UDeadlineCloudJob* Job)
+FParametersConsistencyCheckResult UDeadlineCloudJob::CheckJobParametersConsistency(const UDeadlineCloudJob* Job)
 {
     if (auto Library = UPythonParametersConsistencyChecker::Get())
     {
