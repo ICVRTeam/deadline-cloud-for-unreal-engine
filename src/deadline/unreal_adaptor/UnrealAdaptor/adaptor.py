@@ -278,8 +278,8 @@ class UnrealAdaptor(Adaptor[AdaptorConfiguration]):
         :raises FileNotFoundError: If the unreal_client.py file could not be found.
         """
 
-        unreal_exe = "UnrealEditor-Cmd"
         unreal_project_path = self.init_data.get("project_path", "")
+        unreal_project_path = os.path.expandvars(unreal_project_path)
 
         # First, read args from file since it can be too long to pass
         # them to Job parameter (1024 chars limit)
@@ -289,7 +289,21 @@ class UnrealAdaptor(Adaptor[AdaptorConfiguration]):
             with open(extra_cmd_args_file, "r") as f:
                 extra_cmd_str = f.read()
 
-        # Everythiing between -execcmds=" and " is the value we want to keep
+        unreal_exe = self.init_data.get("executable", "UnrealEditor-Cmd")
+        unreal_exe = os.path.expandvars(unreal_exe)
+
+        # First, read args from file since it can be too long to pass them to Job parameter (1024 chars limit)
+        extra_cmd_str = ""
+        extra_cmd_args_file = self.init_data.get("extra_cmd_args_file", "")
+        if os.path.exists(extra_cmd_args_file):
+            with open(extra_cmd_args_file, "r") as f:
+                extra_cmd_str = f.read()
+
+        # If file is empty, read from Job parameter
+        if extra_cmd_str == "":
+            extra_cmd_str = self.init_data.get("extra_cmd_args", "")
+
+        # Everything between -execcmds=" and " is the value we want to keep
         match = re.search(r'-execcmds=["\']([^"\']*)["\']', extra_cmd_str)
         if match:
             execcmds_value = match.group(1)
