@@ -130,11 +130,11 @@ class UnrealOpenJob(UnrealOpenJobEntity):
 
     def __init__(
         self,
-        file_path: str = None,
-        name: str = None,
-        steps: list[UnrealOpenJobStep] = None,
-        environments: list[UnrealOpenJobEnvironment] = None,
-        extra_parameters: list[UnrealOpenJobParameterDefinition] = None,
+        file_path: Optional[str] = None,
+        name: Optional[str] = None,
+        steps: Optional[list[UnrealOpenJobStep]] = None,
+        environments: Optional[list[UnrealOpenJobEnvironment]] = None,
+        extra_parameters: Optional[list[UnrealOpenJobParameterDefinition]] = None,
         job_shared_settings: JobSharedSettings = JobSharedSettings(),
         asset_references: AssetReferences = AssetReferences(),
     ):
@@ -443,14 +443,14 @@ class RenderUnrealOpenJob(UnrealOpenJob):
 
     def __init__(
         self,
-        file_path: str = None,
-        name: str = None,
-        steps: list[UnrealOpenJobStep] = None,
-        environments: list[UnrealOpenJobEnvironment] = None,
-        extra_parameters: list[UnrealOpenJobParameterDefinition] = None,
+        file_path: Optional[str] = None,
+        name: Optional[str] = None,
+        steps: Optional[list[UnrealOpenJobStep]] = None,
+        environments: Optional[list[UnrealOpenJobEnvironment]] = None,
+        extra_parameters: Optional[list[UnrealOpenJobParameterDefinition]] = None,
         job_shared_settings: JobSharedSettings = JobSharedSettings(),
         asset_references: AssetReferences = AssetReferences(),
-        mrq_job: unreal.MoviePipelineExecutorJob = None,
+        mrq_job: Optional[unreal.MoviePipelineExecutorJob] = None,
     ):
         """
         Construct RenderUnrealOpenJob instance.
@@ -766,7 +766,7 @@ class RenderUnrealOpenJob(UnrealOpenJob):
             destination_dir, prefix="ExtraCmdArgs", extension=".txt"
         )
 
-        with open(cmd_args_file, "w") as f:
+        with open(cmd_args_file, "w", encoding="utf-8") as f:
             logger.info(f"Saving ExtraCmdArgs file `{cmd_args_file}`")
             f.write(cmd_args_str)
 

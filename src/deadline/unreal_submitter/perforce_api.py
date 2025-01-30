@@ -11,10 +11,10 @@ class PerforceApi:
 
     def __init__(
         self,
-        port: str = None,
-        user: str = None,
-        password: str = None,
-        client: str = None,
+        port: Optional[str] = None,
+        user: Optional[str] = None,
+        password: Optional[str] = None,
+        client: Optional[str] = None,
         charset: str = "none",
     ):
         """

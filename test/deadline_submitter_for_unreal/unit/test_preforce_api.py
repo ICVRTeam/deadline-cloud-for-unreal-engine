@@ -35,6 +35,7 @@ class TestPerforceApi:
 
     @pytest.mark.parametrize("password, login_calls", [(None, 0), ("VeryStrongPassword", 1)])
     @patch.object(P4, "run_login", new_callable=MagicMock())
+    @patch.object(P4, "connect", MagicMock())
     def test_login(self, run_login_mock, password, login_calls):
         # GIVEN & WHEN
         PerforceApi(password=password)
