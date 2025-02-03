@@ -35,3 +35,9 @@ class RenderArgumentsTypeNotSetError(DeadlineCloudSubmitterException):
     """Raised when the render arguments type is not set"""
 
     pass
+
+
+class PathContainsInvalidCharacters(DeadlineCloudSubmitterException):
+    """Raised when the path contains not allowed characters"""
+
+    pass
